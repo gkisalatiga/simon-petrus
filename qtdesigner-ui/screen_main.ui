@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>847</width>
-    <height>590</height>
+    <height>628</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>90</y>
+      <y>120</y>
       <width>231</width>
       <height>471</height>
      </rect>
@@ -27,7 +27,7 @@
      <enum>QFrame::NoFrame</enum>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="page">
      <property name="geometry">
@@ -62,7 +62,7 @@
          <height>409</height>
         </rect>
        </property>
-       <widget class="QCommandLinkButton" name="commandLinkButton">
+       <widget class="QCommandLinkButton" name="cmd_warta">
         <property name="geometry">
          <rect>
           <x>9</x>
@@ -75,7 +75,7 @@
          <string>Unggah Warta Jemaat ...</string>
         </property>
        </widget>
-       <widget class="QCommandLinkButton" name="commandLinkButton_2">
+       <widget class="QCommandLinkButton" name="cmd_liturgi">
         <property name="geometry">
          <rect>
           <x>9</x>
@@ -147,9 +147,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-59</y>
+         <y>0</y>
          <width>215</width>
-         <height>478</height>
+         <height>520</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -185,6 +185,13 @@
           </property>
           <property name="text">
            <string>Menu Utama</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCommandLinkButton" name="commandLinkButton_8">
+          <property name="text">
+           <string>Warta dan Tata Ibadah</string>
           </property>
          </widget>
         </item>
@@ -316,22 +323,27 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>80</y>
       <width>591</width>
       <height>21</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <italic>true</italic>
+     </font>
+    </property>
     <property name="text">
-     <string>Manajemen Konten Digital Terintegrasi dan Panel Kendali Administrator GKI Salatiga</string>
+     <string>Komisi Multimedia dan Sarana Prasarana GKI Salatiga</string>
     </property>
    </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>20</y>
+      <x>270</x>
+      <y>10</y>
       <width>61</width>
-      <height>31</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
@@ -363,7 +375,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>90</y>
+      <y>120</y>
       <width>581</width>
       <height>471</height>
      </rect>
@@ -381,6 +393,26 @@
     </property>
     <property name="text">
      <string>✅    UNGGAH PEMBARUAN</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="app_subtitle_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>591</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>SISTEM MONITORING DAN PENGELOLAAN DATA TERPADU GKI SALATIGA</string>
     </property>
    </widget>
   </widget>
