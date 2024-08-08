@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.0.2 (2) --- 2024-08-09
+
+- New: Added "Warta Jemaat" and "Tata Ibadah" automatic uploader
+
 ## v0.0.1 (1) --- 2024-08-07
 
 - New: Added the app's credential generator

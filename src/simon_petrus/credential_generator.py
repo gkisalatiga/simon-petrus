@@ -83,8 +83,10 @@ class WindowMain(QtWidgets.QMainWindow, credential_generator_ui.Ui_MainWindow):
         cipher_text = cipher.encrypt(str(a).encode())
         iv = cipher.iv
 
+        # DEBUG. Please always comment out on production.
+        # ---
         # This is the output, encrypted byte string.
-        print(cipher_text, iv, self.GEN_PASSWORD_SALT)
+        '''print(cipher_text, iv, self.GEN_PASSWORD_SALT)
         print('==' * 25)
         sep = self.GEN_CREDENTIAL_SEPARATOR
         out = sep + cipher_text + sep + iv + sep + self.GEN_PASSWORD_SALT.digest()
@@ -94,7 +96,7 @@ class WindowMain(QtWidgets.QMainWindow, credential_generator_ui.Ui_MainWindow):
         print('==' * 25)
         print(out[:4])
         print('==' * 25)
-        print(sep)
+        print(sep)'''
 
         # Ask the user wherein this credential should be stored.
         # (Qt5 has built-in overwrite confirmation dialog.)
@@ -106,14 +108,12 @@ class WindowMain(QtWidgets.QMainWindow, credential_generator_ui.Ui_MainWindow):
         else:
             stored_cred = stored_cred + '.json.enc' if not stored_cred.endswith('.json.enc') else stored_cred
 
-        print(stored_cred)
+        # DEBUG. Please always comment out on production.
+        # print(stored_cred)
 
         # Save the file.
         with open(stored_cred, 'wb') as fo:
             fo.write(out)
-
-        # decrypt_cipher = AES.new(key, AES.MODE_OFB, iv=iv)
-        # plain_text = decrypt_cipher.decrypt(cipher_text)
 
     @pyqtSlot()
     def on_btn_json_oauth_drive_clicked(self):

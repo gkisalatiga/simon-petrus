@@ -21,29 +21,36 @@ REFERENCES:
     [6] AES encryption of strings
     - https://onboardbase.com/blog/aes-encryption-decryption
     - https://github.com/Legrandin/pycryptodome
+    [7] WordPress REST API references
+    - https://medium.com/@vicgupta/how-to-upload-a-post-or-image-to-wordpress-using-rest-api-220fe046ff7a
 """
 
 from Crypto.Cipher import AES
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSlot
+import base64
 import json
+import os
 import sys
-import time
 
 from lib.credentials import CredentialGenerator
 from lib.credentials import CredentialValidator
 from lib.database import AppDatabase
 from lib.logger import Logger as Lg
 from lib.preferences import SavedPreferences
+from lib.string_validator import StringValidator
+from lib.uploader import Uploader
+from ui import frame_liturgi_upload
 from ui import frame_renungan
 from ui import frame_social_media
+from ui import frame_warta_upload
 from ui import screen_credential_decrypt
 from ui import screen_credential_generator
 from ui import screen_main
 
 # Initializes the app's internal saved preferences (global variable).
 prefs = SavedPreferences()
-prefs.init_config_dir()
+prefs.init_configuration()
 
 # Initializes the app's internal database (global variable).
 app_db = AppDatabase(prefs)
@@ -148,10 +155,14 @@ class ScreenCredentialGenerate(QtWidgets.QMainWindow, screen_credential_generato
     def on_btn_gen_clicked(self):
         # Obtaining the API key and OAUTH2.0 token input strings.
         api_key_gh = self.field_api_gh.text()
-        api_key_wp = self.field_api_wp.text()
         api_key_yt = self.field_api_yt.text()
         drive_oauth_token_path = self.cred_loc
         decryption_password = self.field_pass.text()
+
+        # Creating the base64 WordPress authorization key. [7]
+        wp_user = self.field_api_wp_user.text()
+        wp_pass = self.field_api_wp_pass.text()
+        b64_wp_token = (base64.b64encode(f'{wp_user}:{wp_pass}'.encode())).decode('UTF-8')
 
         # Preparing the dict data.
         a = {}
@@ -161,9 +172,9 @@ class ScreenCredentialGenerate(QtWidgets.QMainWindow, screen_credential_generato
             with open(drive_oauth_token_path, 'r') as b:
                 a = {
                     'api_github': api_key_gh,
-                    'api_wordpress': api_key_wp,
                     'api_youtube': api_key_yt,
-                    'authorized_drive_oauth': json.load(b)
+                    'authorized_drive_oauth': json.load(b),
+                    'wp_authorization': b64_wp_token,
                 }
 
                 # Now encrypt the JSON data.
@@ -255,6 +266,20 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             app_db.load_json_schema()
 
     @pyqtSlot()
+    def on_cmd_liturgi_clicked(self):
+        frame = QtWidgets.QFrame()
+        fragment = FrameTataIbadah()
+        fragment.setupUi(frame)
+
+        # Displaying the frame
+        self.clear_fragment_layout_content()
+        self.fragment_layout.addWidget(fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
+
+    @pyqtSlot()
     def on_cmd_renungan_clicked(self):
         frame = QtWidgets.QFrame()
         fragment = FrameRenungan()
@@ -272,6 +297,20 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
     def on_cmd_social_media_clicked(self):
         frame = QtWidgets.QFrame()
         fragment = FrameSocialMedia()
+        fragment.setupUi(frame)
+
+        # Displaying the frame
+        self.clear_fragment_layout_content()
+        self.fragment_layout.addWidget(fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
+
+    @pyqtSlot()
+    def on_cmd_warta_clicked(self):
+        frame = QtWidgets.QFrame()
+        fragment = FrameWartaJemaat()
         fragment.setupUi(frame)
 
         # Displaying the frame
@@ -347,9 +386,153 @@ class FrameSocialMedia(QtWidgets.QFrame, frame_social_media.Ui_Frame):
         )
 
 
+class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameTataIbadah, self).__init__(*args, **kwargs)
+        self.localized_date = None
+        self.pdf_loc = None
+        self.setupUi(self)
+
+        # Trigger the rendering of initial value.
+        self.on_date_picker_date_time_changed()
+
+        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+
+    @pyqtSlot()
+    def on_date_picker_date_time_changed(self):
+        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
+        cur_date_int = []
+        for l in cur_date:
+            cur_date_int.append(int(l))
+
+        # Validate the current date string.
+        cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
+
+        # Get day of the week string.
+        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
+        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
+
+        # Print the date snippet.
+        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
+
+        # Store the properly formated and localized date, which will become the post title.
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+
+    @pyqtSlot()
+    def on_btn_pdf_select_clicked(self):
+        ff = 'Portable Document Format (*.pdf)'
+        self.pdf_loc = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Pilih berkas PDF tata ibadah untuk diunggah', '', ff)[0]
+
+        # Display the currently selected PDF file for uploading.
+        pdf_basename = os.path.basename(self.pdf_loc)
+        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
+        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
+
+    @pyqtSlot()
+    def on_btn_upload_clicked(self):
+        # Determining the post title.
+        post_title = f'Tata Ibadah {self.localized_date}'
+
+        # Display preamble status.
+        self.findChild(QtWidgets.QLabel, 'label_status').setText("Sedang mengunggah tata ibadah ...")
+        QtCore.QCoreApplication.processEvents()
+
+        # Begin uploading the PDF.
+        uploader = Uploader(prefs, app_db)
+        is_success, msg = uploader.upload_liturgi(self.pdf_loc, post_title)
+
+        # Display the status information.
+        # Display whatever status message returned from the decryption to the user.
+        msg_title = 'Berhasil mengunggah tata ibadah!' if is_success else 'Gagal mengunggah tata ibadah!'
+        self.findChild(QtWidgets.QLabel, 'label_status').setText(msg_title)
+        QtCore.QCoreApplication.processEvents()
+        QtWidgets.QMessageBox.warning(
+            self, msg_title, msg,
+            QtWidgets.QMessageBox.Ok
+        )
+
+
+class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameWartaJemaat, self).__init__(*args, **kwargs)
+        self.localized_date = None
+        self.pdf_loc = None
+        self.setupUi(self)
+
+        # Trigger the rendering of initial value.
+        self.on_date_picker_date_time_changed()
+
+        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+
+    @pyqtSlot()
+    def on_date_picker_date_time_changed(self):
+        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
+        cur_date_int = []
+        for l in cur_date:
+            cur_date_int.append(int(l))
+
+        # Validate the current date string.
+        cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
+
+        # Get day of the week string.
+        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
+        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
+
+        # Print the date snippet.
+        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
+
+        # Store the properly formated and localized date, which will become the post title.
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+
+    @pyqtSlot()
+    def on_btn_pdf_select_clicked(self):
+        ff = 'Portable Document Format (*.pdf)'
+        self.pdf_loc = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Pilih berkas PDF warta jemaat untuk diunggah', '', ff)[0]
+
+        # Display the currently selected PDF file for uploading.
+        pdf_basename = os.path.basename(self.pdf_loc)
+        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
+        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
+
+    @pyqtSlot()
+    def on_btn_upload_clicked(self):
+        # Determining the post title.
+        post_title = f'Warta Jemaat {self.localized_date}'
+
+        # Display preamble status.
+        self.findChild(QtWidgets.QLabel, 'label_status').setText("Sedang mengunggah warta jemaat ...")
+        QtCore.QCoreApplication.processEvents()
+
+        # Begin uploading the PDF.
+        uploader = Uploader(prefs, app_db)
+        is_success, msg = uploader.upload_warta(self.pdf_loc, post_title)
+
+        # Display the status information.
+        # Display whatever status message returned from the decryption to the user.
+        msg_title = 'Berhasil mengunggah warta jemaat!' if is_success else 'Gagal mengunggah warta jemaat!'
+        self.findChild(QtWidgets.QLabel, 'label_status').setText(msg_title)
+        QtCore.QCoreApplication.processEvents()
+        QtWidgets.QMessageBox.warning(
+            self, msg_title, msg,
+            QtWidgets.QMessageBox.Ok
+        )
+
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
 
     win = ScreenCredentialDecrypt()
     win.show()
-    sys.exit(app.exec())
+
+    # Actually exiting the app.
+    exit_code = app.exec()
+
+    # Performing post-operation procedures.
+    prefs.shutdown()
+
+    # Appropriately exiting the app.
+    sys.exit(exit_code)
