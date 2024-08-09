@@ -88,7 +88,7 @@
          <string>Unggah Tata Ibadah ...</string>
         </property>
        </widget>
-       <widget class="QCommandLinkButton" name="commandLinkButton_3">
+       <widget class="QCommandLinkButton" name="cmd_wp_home">
         <property name="geometry">
          <rect>
           <x>9</x>
@@ -105,18 +105,24 @@
      </widget>
     </widget>
     <widget class="QWidget" name="page_2">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>231</width>
-       <height>411</height>
+       <width>100</width>
+       <height>30</height>
       </rect>
      </property>
      <attribute name="label">
       <string>GKI Salatiga+ (Mobile App)</string>
      </attribute>
      <widget class="QScrollArea" name="scrollArea">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -148,7 +154,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>215</width>
+         <width>193</width>
          <height>520</height>
         </rect>
        </property>
@@ -352,7 +358,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.0.1</string>
+     <string>v0.1.0</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -383,6 +389,9 @@
     <layout class="QGridLayout" name="fragment_layout"/>
    </widget>
    <widget class="QPushButton" name="pushButton_2">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>620</x>

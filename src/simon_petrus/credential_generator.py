@@ -83,13 +83,15 @@ class WindowMain(QtWidgets.QMainWindow, credential_generator_ui.Ui_MainWindow):
         cipher_text = cipher.encrypt(str(a).encode())
         iv = cipher.iv
 
+        # Generate the output binary blob.
+        sep = self.GEN_CREDENTIAL_SEPARATOR
+        out = sep + cipher_text + sep + iv + sep + self.GEN_PASSWORD_SALT.digest()
+
         # DEBUG. Please always comment out on production.
         # ---
         # This is the output, encrypted byte string.
         '''print(cipher_text, iv, self.GEN_PASSWORD_SALT)
         print('==' * 25)
-        sep = self.GEN_CREDENTIAL_SEPARATOR
-        out = sep + cipher_text + sep + iv + sep + self.GEN_PASSWORD_SALT.digest()
         print(out)
         print('==' * 25)
         print(out.split(sep))
