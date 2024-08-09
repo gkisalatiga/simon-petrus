@@ -23,6 +23,12 @@ REFERENCES:
     - https://github.com/Legrandin/pycryptodome
     [7] WordPress REST API references
     - https://medium.com/@vicgupta/how-to-upload-a-post-or-image-to-wordpress-using-rest-api-220fe046ff7a
+    [8] Playing GIF images in PyQt5
+    - https://stackoverflow.com/q/10261265
+    - https://www.perplexity.ai/search/qtdesigner-python-displaying-g-cPTPIewkRHS1213kS0t2nQ
+    [9] PyQt5 multithreading to prevent screen freeze
+    - https://stackoverflow.com/a/65447493
+    - https://github.com/shailshouryya/save-thread-result
 """
 
 from Crypto.Cipher import AES
@@ -36,16 +42,20 @@ import sys
 from lib.credentials import CredentialGenerator
 from lib.credentials import CredentialValidator
 from lib.database import AppDatabase
+from lib.external.thread import ThreadWithResult
 from lib.logger import Logger as Lg
 from lib.preferences import SavedPreferences
 from lib.string_validator import StringValidator
 from lib.uploader import Uploader
+from loading_animation import ScreenLoadingAnimation
+from ui import frame_default
 from ui import frame_liturgi_upload
 from ui import frame_renungan
 from ui import frame_social_media
 from ui import frame_warta_upload
 from ui import screen_credential_decrypt
 from ui import screen_credential_generator
+from ui import screen_loading_animation
 from ui import screen_main
 
 # Initializes the app's internal saved preferences (global variable).
@@ -54,6 +64,24 @@ prefs.init_configuration()
 
 # Initializes the app's internal database (global variable).
 app_db = AppDatabase(prefs)
+
+
+def disable_widget(qt_widget: QtWidgets.QWidget):
+    """
+    This function will disable all elements inside a given QtWidget, including the widget itself.
+    :param qt_widget: the QWidget whose children will be disabled.
+    :return: nothing.
+    """
+    qt_widget.setEnabled(False)
+
+
+def enable_widget(qt_widget: QtWidgets.QWidget):
+    """
+    This function will enable all elements inside a given QtWidget, including the widget itself.
+    :param qt_widget: the QWidget whose children will be enabled.
+    :return: nothing.
+    """
+    qt_widget.setEnabled(True)
 
 
 class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.Ui_MainWindow):
@@ -87,8 +115,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
     def on_btn_cred_selector_clicked(self):
         ff = 'Encrypted JSON file (*.json.enc)'
         self.cred_loc = QtWidgets.QFileDialog.getOpenFileName(self, 'Import admin credential file from ...', '', ff)[0]
-        self.txt_cred_loc.setText(self.cred_loc)
-        self.txt_cred_loc.setToolTip(self.cred_loc)
+        if self.cred_loc != '':
+            self.txt_cred_loc.setText(self.cred_loc)
+            self.txt_cred_loc.setToolTip(self.cred_loc)
 
     @pyqtSlot()
     def on_btn_decrypt_clicked(self):
@@ -108,9 +137,38 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         QtCore.QCoreApplication.processEvents()
 
         # Validate the input credential file, and attempt to decrypt the input bytes.
-        password_key = self.field_cred.text()
+        # TODO: Remove this block
+        '''password_key = self.field_cred.text()
         validator = CredentialValidator(self.cred_loc)
-        is_valid, decrypted_dict, message = validator.decrypt(password_key)
+        is_valid, decrypted_dict, message = validator.decrypt(password_key)'''
+
+        # Validate the input credential file, and attempt to decrypt the input bytes.
+        password_key = self.field_cred.text()
+        validator = CredentialValidator(anim, self.cred_loc)
+
+        # Open the animation window and disable all elements in this window, to prevent user input.
+        anim.clear_and_show()
+        disable_widget(self)
+
+        # Using multithreading to prevent GUI freezing [9]
+        t = ThreadWithResult(target=validator.decrypt, args=(password_key,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                is_valid, decrypted_dict, message = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Closing the loading animation and re-enable the window.
+        enable_widget(self)
+        anim.hide()
 
         # Display whatever status message returned from the decryption to the user.
         msg_title = 'Decryption successful!' if is_valid else 'Failed to decrypt the credential data!'
@@ -131,7 +189,10 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
 
             # Open the control panel (administrator dashboard).
             self.hide()
-            ScreenMain(self).show()
+            # ScreenMain(self).show()
+            global win_main
+            win_main = ScreenMain(self)
+            win_main.show()
 
     @pyqtSlot()
     def on_btn_exit_clicked(self):
@@ -178,16 +239,45 @@ class ScreenCredentialGenerate(QtWidgets.QMainWindow, screen_credential_generato
                 }
 
                 # Now encrypt the JSON data.
-                generator = CredentialGenerator()
-                encrypted_bytes = generator.encrypt(a, decryption_password)
+                generator = CredentialGenerator(anim)
+
+                # Open the animation window and disable all elements in this window, to prevent user input.
+                anim.clear_and_show()
+                disable_widget(self)
+
+                # Using multithreading to prevent GUI freezing [9]
+                t = ThreadWithResult(target=generator.encrypt, args=(a, decryption_password,))
+                t.start()
+                while True:
+                    if getattr(t, 'result', None):
+                        # Obtaining the thread function's result
+                        encrypted_bytes = t.result
+                        t.join()
+
+                        break
+                    else:
+                        # When this block is reached, it means the function has not returned any value
+                        # While we wait for the thread response to be returned, let us prevent
+                        # Qt5 GUI freezing by repeatedly executing the following line:
+                        QtCore.QCoreApplication.processEvents()
+
+                # Closing the loading animation and re-enable the window.
+                enable_widget(self)
+                anim.hide()
 
                 # Ask the user wherein this credential should be stored.
                 # (Qt5 has built-in overwrite confirmation dialog.)
                 ff = 'Encrypted JSON file (*.json.enc)'
                 stored_cred = QtWidgets.QFileDialog.getSaveFileName(
                     self, 'Save the encrypted JSON credential into ...', '', ff)[0]
+
                 if stored_cred == '':
-                    return
+                    # Report user cancelled operation.
+                    QtWidgets.QMessageBox.information(
+                        self, 'Operation Cancelled!', 'You have decided not to store the generated credential.',
+                        QtWidgets.QMessageBox.Ok
+                    )
+
                 else:
                     stored_cred = stored_cred + '.json.enc' if not stored_cred.endswith('.json.enc') else stored_cred
                     Lg('main.ScreenCredentialGenerate.on_btn_gen_clicked',
@@ -238,9 +328,13 @@ class ScreenCredentialGenerate(QtWidgets.QMainWindow, screen_credential_generato
 
 
 class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
+
     def __init__(self, *args, obj=None, **kwargs):
         super(ScreenMain, self).__init__(*args, **kwargs)
         self.setupUi(self)
+
+        # Displaying the default fragment.
+        self.clear_fragment_and_display(cur_fragment)
 
     def clear_fragment_layout_content(self):
         """
@@ -252,9 +346,66 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             item = self.fragment_layout.itemAt(i).widget()
             item.deleteLater()
 
+    def clear_fragment_and_display(self, fragment_str: QtWidgets.QWidget):
+        """
+        This function clears the currently fragment and replace it with a new one automatically.
+        :param fragment_str: the target fragment to display, as defined in the local fragment dictionary.
+        :return: nothing.
+        """
+        # The fragment dictionary.
+        FRAGMENT_DICTIONARY = {
+            'fragment_default': FrameDefault(),
+            'fragment_renungan': FrameRenungan(),
+            'fragment_social_media': FrameSocialMedia(),
+            'fragment_tata_ibadah': FrameTataIbadah(),
+            'fragment_warta_jemaat': FrameWartaJemaat()
+        }
+
+        # Prepare the fragment.
+        fragment = FRAGMENT_DICTIONARY[fragment_str]
+
+        # Clear the previous fragment.
+        self.clear_fragment_layout_content()
+
+        # Preparing the fragment to display.
+        frame = QtWidgets.QFrame()
+        fragment.setupUi(frame)
+
+        # Displaying the frame
+        self.fragment_layout.addWidget(fragment)
+
     @pyqtSlot()
     def on_btn_sync_clicked(self):
-        is_success = app_db.refresh_json_schema()
+        # Open the animation window and disable all elements in this window, to prevent user input.
+        anim.clear_and_show()
+        global win_main
+        disable_widget(win_main)
+
+        # Fake the progression.
+        msg = 'Menyinkronisasi basis data JSON dari repositori GitHub ...'
+        anim.set_prog_msg(50, msg)
+        Lg('main.ScreenMain.on_btn_sync_clicked', msg)
+
+        # Using multithreading to prevent GUI freezing [9]
+        t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                is_success = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Closing the loading animation and re-enable the window.
+        enable_widget(win_main)
+        anim.hide()
+
         if is_success:
             QtWidgets.QMessageBox.information(
                 self, 'Berhasil menyinkronisasi!',
@@ -265,15 +416,15 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             # Load the latest downloaded JSON schema into the app.
             app_db.load_json_schema()
 
+            # Refresh the Qt widget of the currently active fragment.
+            global cur_fragment
+            self.clear_fragment_and_display(cur_fragment)
+
     @pyqtSlot()
     def on_cmd_liturgi_clicked(self):
-        frame = QtWidgets.QFrame()
-        fragment = FrameTataIbadah()
-        fragment.setupUi(frame)
-
-        # Displaying the frame
-        self.clear_fragment_layout_content()
-        self.fragment_layout.addWidget(fragment)
+        global cur_fragment
+        cur_fragment = 'fragment_tata_ibadah'
+        self.clear_fragment_and_display(cur_fragment)
 
         # Prevents freezing [5]
         QtCore.QCoreApplication.processEvents()
@@ -281,13 +432,9 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
     @pyqtSlot()
     def on_cmd_renungan_clicked(self):
-        frame = QtWidgets.QFrame()
-        fragment = FrameRenungan()
-        fragment.setupUi(frame)
-
-        # Displaying the frame
-        self.clear_fragment_layout_content()
-        self.fragment_layout.addWidget(fragment)
+        global cur_fragment
+        cur_fragment = 'fragment_renungan'
+        self.clear_fragment_and_display(cur_fragment)
 
         # Prevents freezing [5]
         QtCore.QCoreApplication.processEvents()
@@ -295,13 +442,9 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
     @pyqtSlot()
     def on_cmd_social_media_clicked(self):
-        frame = QtWidgets.QFrame()
-        fragment = FrameSocialMedia()
-        fragment.setupUi(frame)
-
-        # Displaying the frame
-        self.clear_fragment_layout_content()
-        self.fragment_layout.addWidget(fragment)
+        global cur_fragment
+        cur_fragment = 'fragment_social_media'
+        self.clear_fragment_and_display(cur_fragment)
 
         # Prevents freezing [5]
         QtCore.QCoreApplication.processEvents()
@@ -309,17 +452,19 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
     @pyqtSlot()
     def on_cmd_warta_clicked(self):
-        frame = QtWidgets.QFrame()
-        fragment = FrameWartaJemaat()
-        fragment.setupUi(frame)
-
-        # Displaying the frame
-        self.clear_fragment_layout_content()
-        self.fragment_layout.addWidget(fragment)
+        global cur_fragment
+        cur_fragment = 'fragment_warta_jemaat'
+        self.clear_fragment_and_display(cur_fragment)
 
         # Prevents freezing [5]
         QtCore.QCoreApplication.processEvents()
         pass
+
+
+class FrameDefault(QtWidgets.QFrame, frame_default.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameDefault, self).__init__(*args, **kwargs)
+        self.setupUi(self)
 
 
 class FrameRenungan(QtWidgets.QFrame, frame_renungan.Ui_Frame):
@@ -440,8 +585,32 @@ class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
         QtCore.QCoreApplication.processEvents()
 
         # Begin uploading the PDF.
-        uploader = Uploader(prefs, app_db)
-        is_success, msg = uploader.upload_liturgi(self.pdf_loc, post_title)
+        uploader = Uploader(anim, prefs, app_db)
+
+        # Open the animation window and disable all elements in this window, to prevent user input.
+        anim.clear_and_show()
+        global win_main
+        disable_widget(win_main)
+
+        # Using multithreading to prevent GUI freezing [9]
+        t = ThreadWithResult(target=uploader.upload_liturgi, args=(self.pdf_loc, post_title,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                is_success, msg = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Closing the loading animation and re-enable the window.
+        enable_widget(win_main)
+        anim.hide()
 
         # Display the status information.
         # Display whatever status message returned from the decryption to the user.
@@ -508,8 +677,32 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
         QtCore.QCoreApplication.processEvents()
 
         # Begin uploading the PDF.
-        uploader = Uploader(prefs, app_db)
-        is_success, msg = uploader.upload_warta(self.pdf_loc, post_title)
+        uploader = Uploader(anim, prefs, app_db)
+
+        # Open the animation window and disable all elements in this window, to prevent user input.
+        anim.clear_and_show()
+        global win_main
+        disable_widget(win_main)
+
+        # Using multithreading to prevent GUI freezing [9]
+        t = ThreadWithResult(target=uploader.upload_warta, args=(self.pdf_loc, post_title,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                is_success, msg = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Closing the loading animation and re-enable the window.
+        enable_widget(win_main)
+        anim.hide()
 
         # Display the status information.
         # Display whatever status message returned from the decryption to the user.
@@ -523,8 +716,21 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
 
 
 if __name__ == '__main__':
+    # Initiating QApplication.
     app = QtWidgets.QApplication(sys.argv)
 
+    # Initiating the global windows
+    global anim
+    global cur_fragment
+    global win_main
+
+    # Init the loading window animator.
+    anim = ScreenLoadingAnimation()
+
+    # Determining the default fragment to show at startup.
+    cur_fragment = 'fragment_default'
+
+    # Establishing the main window.
     win = ScreenCredentialDecrypt()
     win.show()
 
