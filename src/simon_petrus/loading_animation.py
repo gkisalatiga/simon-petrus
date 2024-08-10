@@ -18,7 +18,6 @@ import time
 
 from PyQt5.QtCore import pyqtSignal, QBuffer, QByteArray
 
-import assets.loading_animation
 from lib.external.meipass import resource_path
 from ui import screen_loading_animation
 

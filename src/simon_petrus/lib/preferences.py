@@ -8,6 +8,7 @@ Written by Samarthya Lykamanuella (github.com/groaking)
 from json.decoder import JSONDecodeError
 import json
 import os
+# from pathlib import Path
 import platformdirs as pfd
 import shutil
 import tempfile
@@ -25,7 +26,11 @@ class SavedPreferences(object):
 
     # The app's current session's temporary folder.
     TEMP_DIRECTORY = tempfile.mkdtemp(prefix='simon_petrus-')
-    Lg('lib.preferences.SavedPreferences', f'Created the temporary directory: {TEMP_DIRECTORY}')
+
+    # Unescaped double backslash problem mitigation in Windows OS.
+    if os.name == 'nt':
+        CONF_DIRECTORY = CONF_DIRECTORY.replace('\\', '/')
+        TEMP_DIRECTORY = TEMP_DIRECTORY.replace('\\', '/')
 
     # The app's settings JSON file.
     JSON_SETTINGS = CONF_DIRECTORY + os.sep + 'saved_preferences.json'
@@ -62,10 +67,17 @@ class SavedPreferences(object):
 
         # Ensuring that the config directory exists.
         try:
-            os.mkdir(self.CONF_DIRECTORY)
+            os.makedirs(self.CONF_DIRECTORY, exist_ok=True)
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'User config folder created: {self.CONF_DIRECTORY}')
         except FileExistsError:
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'User config folder already exists: {self.CONF_DIRECTORY}')
+        
+        # Ensuring that the temporary directory exists.
+        try:
+            os.makedirs(self.TEMP_DIRECTORY, exist_ok=True)
+            Lg('lib.preferences.SavedPreferences', f'Created the temporary directory: {self.TEMP_DIRECTORY}')
+        except FileExistsError:
+            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Temporary directory already exists: {self.CONF_DIRECTORY}')
 
         # Checking if the settings JSON file exists and is valid.
         try:
