@@ -71,6 +71,9 @@ class AppDatabase(object):
             j = r.json()
             with open(save_path, 'w') as fo:
                 fo.write(base64.b64decode(j['content']).decode('utf-8'))
+            
+            # Upon successful JSON data refresh, attempt to reload the JSON data again.
+            self.load_json_schema()
 
             return True
         except Exception as e:

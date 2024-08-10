@@ -21,10 +21,15 @@ python -m pip install -r requirements.txt
 
 3. Jalankan modul utama aplikasi
 
+Jika Anda menggunakan sistem operasi Linux:
+
 ```
 python src/simon_petrus/main.py
 ```
 
+Jika Anda menggunakan sistem operasi Windows, ketuk ganda pada berkas "LaunchSimonPetrus.vbs".
+
 ## Attribution
 
+- Running a Python script without opening the terminal at [Stackoverflow.com](https://stackoverflow.com/a/69220330) by [A. Dzebo](https://stackoverflow.com/users/3030612/a-dzebo), licensed under CC BY-SA
 - [ThreadWithResult](https://github.com/shailshouryya/save-thread-result) by Shail Shouryya (MIT-Licensed)
