@@ -159,7 +159,7 @@ class CredentialValidator(object):
 
             # Return the decrypted JSON dict.
             msg = 'The encrypted JSON credential has been decrypted successfully!'
-            self.anim_window.set_progress(100)
+            self.anim_window.set_prog_msg(100, msg)
             Lg('lib.credentials.CredentialValidator.decrypt', msg)
             return True, parsed_dict, msg
 

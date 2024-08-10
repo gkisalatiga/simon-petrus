@@ -31,7 +31,6 @@ REFERENCES:
     - https://github.com/shailshouryya/save-thread-result
 """
 
-from Crypto.Cipher import AES
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSlot
 import base64
@@ -53,9 +52,9 @@ from ui import frame_liturgi_upload
 from ui import frame_renungan
 from ui import frame_social_media
 from ui import frame_warta_upload
+from ui import frame_wp_homepage
 from ui import screen_credential_decrypt
 from ui import screen_credential_generator
-from ui import screen_loading_animation
 from ui import screen_main
 
 # Initializes the app's internal saved preferences (global variable).
@@ -346,23 +345,24 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             item = self.fragment_layout.itemAt(i).widget()
             item.deleteLater()
 
-    def clear_fragment_and_display(self, fragment_str: QtWidgets.QWidget):
+    def clear_fragment_and_display(self, fragment_str: str):
         """
         This function clears the currently fragment and replace it with a new one automatically.
         :param fragment_str: the target fragment to display, as defined in the local fragment dictionary.
         :return: nothing.
         """
         # The fragment dictionary.
-        FRAGMENT_DICTIONARY = {
+        const_fragment_dictionary = {
             'fragment_default': FrameDefault(),
             'fragment_renungan': FrameRenungan(),
             'fragment_social_media': FrameSocialMedia(),
             'fragment_tata_ibadah': FrameTataIbadah(),
-            'fragment_warta_jemaat': FrameWartaJemaat()
+            'fragment_warta_jemaat': FrameWartaJemaat(),
+            'fragment_wp_home': FrameWordPressHome()
         }
 
         # Prepare the fragment.
-        fragment = FRAGMENT_DICTIONARY[fragment_str]
+        fragment = const_fragment_dictionary[fragment_str]
 
         # Clear the previous fragment.
         self.clear_fragment_layout_content()
@@ -460,6 +460,16 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         QtCore.QCoreApplication.processEvents()
         pass
 
+    @pyqtSlot()
+    def on_cmd_wp_home_clicked(self):
+        global cur_fragment
+        cur_fragment = 'fragment_wp_home'
+        self.clear_fragment_and_display(cur_fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
+
 
 class FrameDefault(QtWidgets.QFrame, frame_default.Ui_Frame):
     def __init__(self, *args, obj=None, **kwargs):
@@ -541,6 +551,7 @@ class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
         # Trigger the rendering of initial value.
         self.on_date_picker_date_time_changed()
 
+        # Connect the slots.
         self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
 
     @pyqtSlot()
@@ -713,6 +724,98 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
             self, msg_title, msg,
             QtWidgets.QMessageBox.Ok
         )
+
+
+class FrameWordPressHome(QtWidgets.QFrame, frame_wp_homepage.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameWordPressHome, self).__init__(*args, **kwargs)
+        self.img_loc = None
+        self.setupUi(self)
+
+        # Connect the slots.
+        self.check_autodetect_yt.stateChanged.connect(self.on_check_autodetect_yt_state_changed)
+        self.check_autodetect_ig.stateChanged.connect(self.on_check_autodetect_ig_state_changed)
+
+    @pyqtSlot()
+    def on_btn_execute_clicked(self):
+
+        # Display preamble status.
+        self.findChild(QtWidgets.QLabel, 'label_status').setText("Memperbarui halaman utama WordPress GKISalatiga.org ...")
+        QtCore.QCoreApplication.processEvents()
+
+        # Begin updating the WordPress main page.
+        uploader = Uploader(anim, prefs, app_db)
+
+        # Determining the execution arguments.
+        is_autofetch_youtube = self.findChild(QtWidgets.QCheckBox, 'check_autodetect_yt').isChecked()
+        is_autofetch_instagram = self.findChild(QtWidgets.QCheckBox, 'check_autodetect_ig').isChecked()
+        custom_youtube_link = self.findChild(QtWidgets.QLineEdit, 'field_yt_link').text()
+        custom_poster_img_path = self.img_loc
+
+        # Open the animation window and disable all elements in this window, to prevent user input.
+        anim.clear_and_show()
+        global win_main
+        disable_widget(win_main)
+
+        # Using multithreading to prevent GUI freezing [9]
+        t = ThreadWithResult(target=uploader.update_wp_homepage, args=(is_autofetch_youtube, is_autofetch_instagram, custom_youtube_link, custom_poster_img_path,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                is_success, msg = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Closing the loading animation and re-enable the window.
+        enable_widget(win_main)
+        anim.hide()
+
+        # Display the status information.
+        # Display whatever status message returned from the decryption to the user.
+        msg_title = 'Berhasil memperbarui laman utama WordPress!' if is_success else 'Gagal memperbarui laman utama!'
+        self.findChild(QtWidgets.QLabel, 'label_status').setText(msg_title)
+        QtCore.QCoreApplication.processEvents()
+        QtWidgets.QMessageBox.warning(
+            self, msg_title, msg,
+            QtWidgets.QMessageBox.Ok
+        )
+
+    @pyqtSlot()
+    def on_btn_img_select_clicked(self):
+        ff = 'Image files (*.jpeg *.jpg *.png)'
+        self.img_loc = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Pilih media dalam bentuk gambar untuk dijadikan poster depan GKISalatiga.org', '', ff)[0]
+
+        # Display the currently selected image file for uploading.
+        img_basename = os.path.basename(self.img_loc)
+        self.findChild(QtWidgets.QLabel, 'txt_img_loc').setText(img_basename)
+        self.findChild(QtWidgets.QLabel, 'txt_img_loc').setToolTip(self.img_loc)
+
+
+    @pyqtSlot()
+    def on_check_autodetect_yt_state_changed(self):
+        if self.findChild(QtWidgets.QCheckBox, 'check_autodetect_yt').isChecked():
+            self.findChild(QtWidgets.QLineEdit, 'field_yt_link').setEnabled(False)
+            self.findChild(QtWidgets.QLabel, 'label_yt_helper').setEnabled(False)
+        else:
+            self.findChild(QtWidgets.QLineEdit, 'field_yt_link').setEnabled(True)
+            self.findChild(QtWidgets.QLabel, 'label_yt_helper').setEnabled(True)
+
+    @pyqtSlot()
+    def on_check_autodetect_ig_state_changed(self):
+        if self.findChild(QtWidgets.QCheckBox, 'check_autodetect_ig').isChecked():
+            self.findChild(QtWidgets.QPushButton, 'btn_img_select').setEnabled(False)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setEnabled(False)
+        else:
+            self.findChild(QtWidgets.QPushButton, 'btn_img_select').setEnabled(True)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setEnabled(True)
 
 
 if __name__ == '__main__':

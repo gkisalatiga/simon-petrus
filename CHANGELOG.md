@@ -1,5 +1,11 @@
 # Simon Petrus Changelog
 
+## v0.1.0 (4) --- 2024-08-10
+
+- Info: This is the first compilation attempt of the app into executable binaries
+- New: Added the WordPress homepage updater of GKISalatiga.org
+- Fix: Fixed segmentation fault when updating the loading progress bar
+
 ## v0.0.3 (3) --- 2024-08-09
 
 - New: Added loading window during uploads and most other operations
