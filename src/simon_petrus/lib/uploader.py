@@ -34,7 +34,6 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from instascrap import InstaScraper
 from magic import Magic as Mgc
-from pdf2image import convert_from_path
 from urllib.parse import urlparse, parse_qs
 import fitz
 import json
