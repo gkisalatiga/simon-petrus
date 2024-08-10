@@ -14,15 +14,32 @@ REFERENCES:
 
 
 class InvalidMimeTypeException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    """ Errors related to undesired mimetype of a selected file. """
+    def __repr__(self):
+        return '<InvalidMimeTypeException: The file mimetype is unexpected or the file is corrupt>'
+
+    __str__ = __repr__
 
 
 class MalformedHttpResponseJSON(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    """ Errors related to invalid JSON format. """
+    def __repr__(self):
+        return '<MalformedHttpResponseJSON: The retrieved JSON file cannot be parsed by the back-end>'
+
+    __str__ = __repr__
+
+
+class MalformedSettingsJSON(Exception):
+    """ Errors related to invalid app's settings' JSON structure, usually due to updates. """
+    def __repr__(self):
+        return '<MalformedSettingsJSON: The app\'s settings JSON file does not conform to the latest standard>'
+
+    __str__ = __repr__
 
 
 class UploadFileSizeTooBig(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+    """ Upload file size limitation error (server API-side). """
+    def __repr__(self):
+        return '<UploadFileSizeTooBig: The API method cannot handle a file this big>'
+
+    __str__ = __repr__

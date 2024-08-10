@@ -29,6 +29,8 @@ REFERENCES:
     [9] PyQt5 multithreading to prevent screen freeze
     - https://stackoverflow.com/a/65447493
     - https://github.com/shailshouryya/save-thread-result
+    [10] Prevent window resizing in PyQt5
+    - https://stackoverflow.com/a/13775478
 """
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -37,6 +39,8 @@ import base64
 import json
 import os
 import sys
+
+from PyQt5.QtWidgets import QMessageBox
 
 from lib.credentials import CredentialGenerator
 from lib.credentials import CredentialValidator
@@ -56,6 +60,7 @@ from ui import frame_wp_homepage
 from ui import screen_credential_decrypt
 from ui import screen_credential_generator
 from ui import screen_main
+from ui import screen_settings
 
 # Initializes the app's internal saved preferences (global variable).
 prefs = SavedPreferences()
@@ -89,6 +94,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         super(ScreenCredentialDecrypt, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
         # The temporary value of the selected credential location.
         self.cred_loc = ''
 
@@ -113,8 +121,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
     @pyqtSlot()
     def on_btn_cred_selector_clicked(self):
         ff = 'Encrypted JSON file (*.json.enc)'
-        self.cred_loc = QtWidgets.QFileDialog.getOpenFileName(self, 'Import admin credential file from ...', '', ff)[0]
-        if self.cred_loc != '':
+        loc = QtWidgets.QFileDialog.getOpenFileName(self, 'Import admin credential file from ...', '', ff)[0]
+        if not loc == '':
+            self.cred_loc = loc
             self.txt_cred_loc.setText(self.cred_loc)
             self.txt_cred_loc.setToolTip(self.cred_loc)
 
@@ -134,12 +143,6 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         # Change the status.
         self.label_status.setText('Attempting to decrypt the credential data ...')
         QtCore.QCoreApplication.processEvents()
-
-        # Validate the input credential file, and attempt to decrypt the input bytes.
-        # TODO: Remove this block
-        '''password_key = self.field_cred.text()
-        validator = CredentialValidator(self.cred_loc)
-        is_valid, decrypted_dict, message = validator.decrypt(password_key)'''
 
         # Validate the input credential file, and attempt to decrypt the input bytes.
         password_key = self.field_cred.text()
@@ -183,8 +186,31 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
 
             # Preparing the JSON schema, ensuring that we have a valid data.
             app_db.load_json_schema()
-            if not app_db.is_db_exist or not app_db.is_db_valid:
-                app_db.refresh_json_schema()
+
+            # If we do not have a valid JSON schema, attempt to refresh from GitHub repo.
+            if not app_db.is_db_exist or not app_db.is_db_valid or prefs.settings['autosync_on_launch'] == 1:
+
+                # Disable all elements in this window for a while, to prevent user input.
+                disable_widget(self)
+
+                # Using multithreading to prevent GUI freezing [9]
+                t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+                t.start()
+                while True:
+                    if getattr(t, 'result', None):
+                        # Obtaining the thread function's result
+                        _ = t.result
+                        t.join()
+
+                        break
+                    else:
+                        # When this block is reached, it means the function has not returned any value
+                        # While we wait for the thread response to be returned, let us prevent
+                        # Qt5 GUI freezing by repeatedly executing the following line:
+                        QtCore.QCoreApplication.processEvents()
+
+                # Re-enable the window.
+                enable_widget(self)
 
             # Open the control panel (administrator dashboard).
             self.hide()
@@ -210,6 +236,9 @@ class ScreenCredentialGenerate(QtWidgets.QMainWindow, screen_credential_generato
         super(ScreenCredentialGenerate, self).__init__(*args, **kwargs)
         self.cred_loc = None
         self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
 
     @pyqtSlot()
     def on_btn_gen_clicked(self):
@@ -332,6 +361,9 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         super(ScreenMain, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
         # Displaying the default fragment.
         self.clear_fragment_and_display(cur_fragment)
 
@@ -373,6 +405,66 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
         # Displaying the frame
         self.fragment_layout.addWidget(fragment)
+
+    @pyqtSlot()
+    def on_action_exit_triggered(self):
+        self.close()
+
+    @pyqtSlot()
+    def on_action_settings_triggered(self):
+        ScreenSettings(self).show()
+
+    @pyqtSlot()
+    def on_btn_push_clicked(self):
+        # Display the confirmation dialog.
+        confirmation_res = QMessageBox.question(
+            self,
+            'Unggah Pembaruan GKI Salatiga+',
+            'Apakah Anda yakin akan mengunggah perubahan lokal ke repositori awan GKI Salatiga+?\n'
+            'Perubahan yang sudah dibuat tidak dapat dikembalikan ke kondisi awal.',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        # Carry out the repo push.
+        if confirmation_res == QMessageBox.Yes:
+
+            # Open the animation window and disable all elements in this window, to prevent user input.
+            anim.clear_and_show()
+            global win_main
+            disable_widget(win_main)
+
+            # Using multithreading to prevent GUI freezing [9]
+            t = ThreadWithResult(target=app_db.push_json_schema, args=(anim,))
+            t.start()
+            while True:
+                if getattr(t, 'result', None):
+                    # Obtaining the thread function's result
+                    is_success, j, msg = t.result
+                    t.join()
+
+                    break
+                else:
+                    # When this block is reached, it means the function has not returned any value
+                    # While we wait for the thread response to be returned, let us prevent
+                    # Qt5 GUI freezing by repeatedly executing the following line:
+                    QtCore.QCoreApplication.processEvents()
+
+            # Closing the loading animation and re-enable the window.
+            enable_widget(win_main)
+            anim.hide()
+
+            # Display the status information.
+            # Display whatever status message returned from the decryption to the user.
+            msg_title = 'Berhasil mengunggah pembaruan data GKI Salatiga+!' if is_success else 'Gagal melakukan pemutakhiran data GKI Salatiga+!'
+            QtWidgets.QMessageBox.warning(
+                self, msg_title, msg,
+                QtWidgets.QMessageBox.Ok
+            )
+
+            # Save the successfully pushed data locally.
+            if is_success:
+                app_db.save_local()
 
     @pyqtSlot()
     def on_btn_sync_clicked(self):
@@ -578,13 +670,15 @@ class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):
         ff = 'Portable Document Format (*.pdf)'
-        self.pdf_loc = QtWidgets.QFileDialog.getOpenFileName(
+        loc = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Pilih berkas PDF tata ibadah untuk diunggah', '', ff)[0]
 
         # Display the currently selected PDF file for uploading.
-        pdf_basename = os.path.basename(self.pdf_loc)
-        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
-        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
+        if not loc == '':
+            self.pdf_loc = loc
+            pdf_basename = os.path.basename(self.pdf_loc)
+            self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
+            self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
 
     @pyqtSlot()
     def on_btn_upload_clicked(self):
@@ -670,13 +764,15 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):
         ff = 'Portable Document Format (*.pdf)'
-        self.pdf_loc = QtWidgets.QFileDialog.getOpenFileName(
+        loc = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Pilih berkas PDF warta jemaat untuk diunggah', '', ff)[0]
 
         # Display the currently selected PDF file for uploading.
-        pdf_basename = os.path.basename(self.pdf_loc)
-        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
-        self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
+        if not loc == '':
+            self.pdf_loc = loc
+            pdf_basename = os.path.basename(self.pdf_loc)
+            self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setText(pdf_basename)
+            self.findChild(QtWidgets.QLabel, 'txt_pdf_loc').setToolTip(self.pdf_loc)
 
     @pyqtSlot()
     def on_btn_upload_clicked(self):
@@ -790,14 +886,15 @@ class FrameWordPressHome(QtWidgets.QFrame, frame_wp_homepage.Ui_Frame):
     @pyqtSlot()
     def on_btn_img_select_clicked(self):
         ff = 'Image files (*.jpeg *.jpg *.png)'
-        self.img_loc = QtWidgets.QFileDialog.getOpenFileName(
+        loc = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Pilih media dalam bentuk gambar untuk dijadikan poster depan GKISalatiga.org', '', ff)[0]
 
         # Display the currently selected image file for uploading.
-        img_basename = os.path.basename(self.img_loc)
-        self.findChild(QtWidgets.QLabel, 'txt_img_loc').setText(img_basename)
-        self.findChild(QtWidgets.QLabel, 'txt_img_loc').setToolTip(self.img_loc)
-
+        if not loc == '':
+            self.img_loc = loc
+            img_basename = os.path.basename(self.img_loc)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setText(img_basename)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setToolTip(self.img_loc)
 
     @pyqtSlot()
     def on_check_autodetect_yt_state_changed(self):
@@ -816,6 +913,41 @@ class FrameWordPressHome(QtWidgets.QFrame, frame_wp_homepage.Ui_Frame):
         else:
             self.findChild(QtWidgets.QPushButton, 'btn_img_select').setEnabled(True)
             self.findChild(QtWidgets.QLabel, 'txt_img_loc').setEnabled(True)
+
+
+class ScreenSettings(QtWidgets.QMainWindow, screen_settings.Ui_MainWindow):
+
+    def __init__(self, *args, obj=None, **kwargs):
+        super(ScreenSettings, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Displaying the appropriate settings value in each field.
+        self.chk_autosync.setChecked(True if prefs.settings['autosync_on_launch'] == 1 else False)
+
+    @pyqtSlot()
+    def on_btn_apply_clicked(self):
+        # Saving the settings value.
+        prefs.settings['autosync_on_launch'] = 1 if self.chk_autosync.isChecked() == True else 0
+
+        # Writing config into file.
+        prefs.save_config()
+
+        # Notify the user that the settings have been saved.
+        QtWidgets.QMessageBox.information(
+            self, 'Berhasil menyimpan pengaturan!',
+            'Pengaturan berhasil disimpan! Jendela pengaturan akan tertutup setelah ini.',
+            QtWidgets.QMessageBox.Ok
+        )
+
+        # Finally, close this settings modal.
+        self.close()
+
+    @pyqtSlot()
+    def on_btn_cancel_clicked(self):
+        self.close()
 
 
 if __name__ == '__main__':

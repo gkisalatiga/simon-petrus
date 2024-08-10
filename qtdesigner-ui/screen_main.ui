@@ -106,14 +106,14 @@
     </widget>
     <widget class="QWidget" name="page_2">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>100</width>
-       <height>30</height>
+       <width>231</width>
+       <height>411</height>
       </rect>
      </property>
      <attribute name="label">
@@ -121,7 +121,7 @@
      </attribute>
      <widget class="QScrollArea" name="scrollArea">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="geometry">
        <rect>
@@ -154,13 +154,16 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>193</width>
+         <width>215</width>
          <height>520</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QLabel" name="label_2">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="font">
            <font>
             <weight>75</weight>
@@ -175,6 +178,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_9">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Tampilkan Poster ...</string>
           </property>
@@ -196,6 +202,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_8">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Warta dan Tata Ibadah</string>
           </property>
@@ -203,6 +212,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_7">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Agenda Sepekan</string>
           </property>
@@ -210,6 +222,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_5">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Persembahan</string>
           </property>
@@ -224,6 +239,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_6">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Formulir</string>
           </property>
@@ -231,6 +249,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_10">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Galeri</string>
           </property>
@@ -238,6 +259,9 @@
         </item>
         <item>
          <widget class="QLabel" name="label_4">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="font">
            <font>
             <weight>75</weight>
@@ -252,6 +276,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_11">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Tampilkan Daftar Putar ...</string>
           </property>
@@ -273,6 +300,9 @@
         </item>
         <item>
          <widget class="QCommandLinkButton" name="commandLinkButton_4">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>Konten Profil Gereja</string>
           </property>
@@ -358,7 +388,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.1.1</string>
+     <string>v0.1.2</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -388,9 +418,9 @@
     </property>
     <layout class="QGridLayout" name="fragment_layout"/>
    </widget>
-   <widget class="QPushButton" name="pushButton_2">
+   <widget class="QPushButton" name="btn_push">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -435,6 +465,9 @@
     </rect>
    </property>
    <widget class="QMenu" name="menuBerkas">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="title">
      <string>Info</string>
     </property>
@@ -445,15 +478,18 @@
    </widget>
    <widget class="QMenu" name="menuAkun">
     <property name="title">
-     <string>Kredensial</string>
+     <string>Aplikasi</string>
     </property>
-    <addaction name="actionPengaturan"/>
-    <addaction name="actionKeluar_Aplikasi"/>
+    <addaction name="action_settings"/>
+    <addaction name="action_exit"/>
    </widget>
    <addaction name="menuAkun"/>
    <addaction name="menuBerkas"/>
   </widget>
   <action name="actionTentang">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Tentang</string>
    </property>
@@ -473,12 +509,12 @@
     <string>Log Masuk</string>
    </property>
   </action>
-  <action name="actionPengaturan">
+  <action name="action_settings">
    <property name="text">
     <string>Pengaturan</string>
    </property>
   </action>
-  <action name="actionKeluar_Aplikasi">
+  <action name="action_exit">
    <property name="text">
     <string>Keluar Aplikasi</string>
    </property>

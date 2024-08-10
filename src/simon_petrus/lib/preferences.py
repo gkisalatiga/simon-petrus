@@ -13,6 +13,7 @@ import platformdirs as pfd
 import shutil
 import tempfile
 
+from lib.exceptions import MalformedSettingsJSON
 from lib.logger import Logger as Lg
 
 
@@ -40,6 +41,7 @@ class SavedPreferences(object):
 
     # The default settings/config template JSON structure.
     JSON_SETTINGS_TEMPLATE = {
+        'autosync_on_launch': 1,
         'remember_cred_loc': 0,
         'saved_cred_loc': '',
     }
@@ -57,6 +59,9 @@ class SavedPreferences(object):
         with open(self.JSON_SETTINGS, 'w') as a:
             a.write(json.dumps(self.JSON_SETTINGS_TEMPLATE))
             self.settings = self.JSON_SETTINGS_TEMPLATE
+
+        # Don't forget to write the temporary settings into the JSON file.
+        self.save_config()
 
     def init_configuration(self):
         """
@@ -87,7 +92,7 @@ class SavedPreferences(object):
 
             # Testing if the loaded JSON file has the same set of keys.
             if not self.settings.keys() == self.JSON_SETTINGS_TEMPLATE.keys():
-                raise JSONDecodeError
+                raise MalformedSettingsJSON
 
         except JSONDecodeError:
             # If the JSON file is invalid, instead just recreate the JSON file from scratch.
@@ -95,12 +100,40 @@ class SavedPreferences(object):
                 'Settings JSON file is invalid! Creating settings.json from scratch ...')
             self.create_default_config()
 
+        except MalformedSettingsJSON:
+            # If this clause is reached, we will attempt to upgrade/migrate the settings
+            # instead of merely overwriting any previous settings with the default template.
+            Lg('lib.preferences.SavedPreferences.init_config_dir',
+               'Found non-conforming settings JSON file. Trying to migrate the settings ...')
+            self.migrate_settings()
+
         except FileNotFoundError:
             # If the JSON file does not exist,
             # instead just recreate the JSON file from scratch.
             Lg('lib.preferences.SavedPreferences.init_config_dir',
                 'Settings JSON file not found! Creating settings.json from scratch ...')
             self.create_default_config()
+
+    def migrate_settings(self):
+        """
+        Given that a newer version of this app introduces new configuration items or categories,
+        attempt to migrate the values in the previous config version into the newer one.
+        :return: nothing.
+        """
+        with open(self.JSON_SETTINGS, 'r') as a:
+            # Assigning the parsed JSON values into a temporary dictionary.
+            old_settings = json.load(a)
+
+            # Preparing the new, upgraded settings structure.
+            new_settings = self.JSON_SETTINGS_TEMPLATE
+
+            for item in old_settings.keys():
+                new_settings[item] = old_settings[item]
+
+            # Assigning the new, upgraded settings into the temporary file
+            # and then save the settings into JSON file.
+            self.settings = new_settings
+            self.save_config()
 
     def save_config(self):
         """
@@ -122,3 +155,6 @@ class SavedPreferences(object):
         if os.path.isdir(self.TEMP_DIRECTORY):
             Lg('lib.preferences.SavedPreferences.shutdown', f'Removing the temporary directory ...')
             shutil.rmtree(self.TEMP_DIRECTORY)
+
+        # Don't forget to write the temporary settings into the JSON file.
+        self.save_config()
