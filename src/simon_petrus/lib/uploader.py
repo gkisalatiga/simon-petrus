@@ -157,20 +157,6 @@ class Uploader(object):
         # Returning the output thumbnail path.
         return output_file
 
-        # TODO: Remove this block if fitz (PyMuPDF) is working well.
-        '''# Determining the output filename.
-        filename_without_extension = os.path.splitext(os.path.split(pdf_path)[1])[0]
-        output_file = self.prefs.TEMP_DIRECTORY + os.sep + filename_without_extension + '.png'
-
-        # Extract the first page of the PDF file as an image. [3]
-        images = convert_from_path(pdf_path, dpi=200, first_page=1, last_page=1)
-
-        # Save the thumbnail.
-        images[0].save(output_file, 'JPEG')
-        Lg('lib.uploader.Uploader.generate_pdf_thumbnail', f'PDF thumbnail has been saved to: {output_file}')
-
-        return output_file'''
-
     def get_latest_ig_post(self, account_name: str):
         """
         Retrieve one and only one last post of an Instagram account.

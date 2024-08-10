@@ -237,7 +237,7 @@ class Ui_MainWindow(object):
         self.toolBox.setItemText(self.toolBox.indexOf(self.page_2), _translate("MainWindow", "GKI Salatiga+ (Mobile App)"))
         self.app_title.setText(_translate("MainWindow", "Simon Petrus"))
         self.app_subtitle.setText(_translate("MainWindow", "Komisi Multimedia dan Sarana Prasarana GKI Salatiga"))
-        self.label.setText(_translate("MainWindow", "v0.1.0"))
+        self.label.setText(_translate("MainWindow", "v0.1.1"))
         self.btn_sync.setText(_translate("MainWindow", "🔁    SINKRONISASI DATA"))
         self.pushButton_2.setText(_translate("MainWindow", "✅    UNGGAH PEMBARUAN"))
         self.app_subtitle_2.setText(_translate("MainWindow", "SISTEM MONITORING DAN PENGELOLAAN DATA TERPADU GKI SALATIGA"))
