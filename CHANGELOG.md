@@ -1,5 +1,11 @@
 # Simon Petrus Changelog
 
+## v0.1.2 (6) --- 2024-08-11
+
+- New: Added configuration and common settings window
+- New: Composed the GitHub pusher for GKI Salatiga+ JSON schema
+- Fix: (Minor) Disabled window/screen resizing
+
 ## v0.1.1 (5) --- 2024-08-10
 
 - Info: Changed PDF thumbnail generator dependency from "pdf2image" to "fitz" (PyMuPDF) to allow PDF rasterization without external binary install

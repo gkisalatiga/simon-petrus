@@ -10,6 +10,8 @@ REFERENCES:
     - https://stackoverflow.com/a/50105605
     [2] Covert GIF to base64, and displaying base64 in PyQt5
     - https://www.perplexity.ai/search/python-convert-gif-to-base64-6ZLLwiVERFOsLzrVBuqvIw
+    [3] Prevent window resizing in PyQt5
+    - https://stackoverflow.com/a/13775478
 """
 import base64
 
@@ -31,19 +33,12 @@ class ScreenLoadingAnimation(QtWidgets.QMainWindow, screen_loading_animation.Ui_
         super(ScreenLoadingAnimation, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        # Prevent resizing. [3]
+        self.setFixedSize(self.size())
+
         # Connecting the slot for updating the progress bar value.
         self.sig_loading_progress.connect(self.main_progress.setValue)
 
-        # Decode the base64 GIF buffer.
-        # gif_data = base64.b64decode(assets.loading_animation.value)
-        # buffer = QBuffer()
-        # buffer.setData(QByteArray(gif_data))
-        # buffer.open(QBuffer.ReadOnly)
-
-        # Displaying the animation GIF from GIF base64 buffer. [2]
-        # gif = QtGui.QMovie(buffer)
-        # self.label_gif.setMovie(gif)
-        # gif.start()
         gif = QtGui.QMovie(resource_path('assets/loading_animation.gif'))
         self.label_gif.setMovie(gif)
         gif.start()

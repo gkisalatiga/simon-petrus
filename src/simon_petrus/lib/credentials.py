@@ -97,9 +97,8 @@ class CredentialValidator(object):
         """
         self.anim_window = anim_window
 
-        # Attempt to open the encrypted JSON data.
-        with open(cred_loc, 'rb') as fo:
-            self.parsed_bytes = fo.read()
+        # Pass the variable to all of this class' method.
+        self.cred_loc = cred_loc
 
     def decrypt(self, cred_password: str):
         """
@@ -112,12 +111,16 @@ class CredentialValidator(object):
         """
 
         try:
+            # Attempt to open the encrypted JSON data.
+            with open(self.cred_loc, 'rb') as fo:
+                parsed_bytes = fo.read()
+
             # Obtains the separator byte.
             msg = 'Obtaining the separator byte ...'
             self.anim_window.set_prog_msg(10, msg)
             Lg('lib.credentials.CredentialValidator.decrypt', msg)
-            sep = self.parsed_bytes[:4]
-            split_bytes = self.parsed_bytes.split(sep)
+            sep = parsed_bytes[:4]
+            split_bytes = parsed_bytes.split(sep)
 
             # Obtains the cipher text, iv value, and password salt.
             msg = 'Resolving the AES-OFB cipher text, iv value, and password salt ...'
@@ -170,5 +173,10 @@ class CredentialValidator(object):
 
         except ValueError as e:
             msg = f'The JSON file you specified is invalid, corrupted, or broken: {e}'
+            Lg('lib.credentials.CredentialValidator.decrypt', msg)
+            return False, {}, msg
+
+        except FileNotFoundError as e:
+            msg = f'The credential file you are specifying cannot be found!: {e}'
             Lg('lib.credentials.CredentialValidator.decrypt', msg)
             return False, {}, msg

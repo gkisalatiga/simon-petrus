@@ -111,7 +111,7 @@ class Ui_Frame(object):
         self.check_autodetect_yt.setChecked(True)
         self.check_autodetect_yt.setObjectName("check_autodetect_yt")
         self.label_yt_helper = QtWidgets.QLabel(Frame)
-        self.label_yt_helper.setEnabled(True)
+        self.label_yt_helper.setEnabled(False)
         self.label_yt_helper.setGeometry(QtCore.QRect(200, 210, 361, 16))
         font = QtGui.QFont()
         font.setPointSize(9)

@@ -315,7 +315,7 @@ secara programatis.</string>
   </widget>
   <widget class="QLabel" name="label_yt_helper">
    <property name="enabled">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="geometry">
     <rect>
