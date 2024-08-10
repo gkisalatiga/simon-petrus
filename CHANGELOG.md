@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.1.1 (5) --- 2024-08-10
+
+- Info: Changed PDF thumbnail generator dependency from "pdf2image" to "fitz" (PyMuPDF) to allow PDF rasterization without external binary install
+
 ## v0.1.0 (4) --- 2024-08-10
 
 - Info: This is the first compilation attempt of the app into executable binaries

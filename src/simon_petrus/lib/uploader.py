@@ -36,6 +36,7 @@ from instascrap import InstaScraper
 from magic import Magic as Mgc
 from pdf2image import convert_from_path
 from urllib.parse import urlparse, parse_qs
+import fitz
 import json
 import os
 import requests
@@ -136,17 +137,24 @@ class Uploader(object):
         :param pdf_path: the string pointing to the respective PDF file's path.
         :return: the generated thumbnail's image path.
         """
+
         # Determining the output filename.
         filename_without_extension = os.path.splitext(os.path.split(pdf_path)[1])[0]
         output_file = self.prefs.TEMP_DIRECTORY + os.sep + filename_without_extension + '.png'
 
-        # Extract the first page of the PDF file as an image. [3]
-        images = convert_from_path(pdf_path, dpi=200, first_page=1, last_page=1)
+        # Setting PDF thumbnail image quality.
+        dpi = 75
+        zoom_factor = dpi / 72
 
-        # Save the thumbnail.
-        images[0].save(output_file, 'JPEG')
-        Lg('lib.uploader.Uploader.generate_pdf_thumbnail', f'PDF thumbnail has been saved to: {output_file}')
+        # Generating the rasterization of PDF using PyMuPDF (fitz).
+        magnify = fitz.Matrix(zoom_factor, zoom_factor)
+        raster_doc = fitz.open(pdf_path)
 
+        # Saving only the raster image of the first page of the PDF only.
+        pix = raster_doc[0].get_pixmap(matrix=magnify)
+        pix.save(output_file)
+
+        # Returning the output thumbnail path.
         return output_file
 
     def get_latest_ig_post(self, account_name: str):
