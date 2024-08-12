@@ -33,10 +33,13 @@ REFERENCES:
     - https://stackoverflow.com/a/13775478
     [11] Capitalize the first letter of words in a sentence
     - https://stackoverflow.com/a/1549644
+    [12] Displaying image in PyQt5
+    - https://stackoverflow.com/a/51431109
 """
 
 from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from PyQt5.QtCore import pyqtSlot, QPoint
+from PyQt5.QtGui import QPixmap
 import base64
 import json
 import os
@@ -44,6 +47,7 @@ import sys
 
 from PyQt5.QtWidgets import QMessageBox
 
+from lib.assets import AppAssets
 from lib.credentials import CredentialGenerator
 from lib.credentials import CredentialValidator
 from lib.database import AppDatabase
@@ -67,6 +71,7 @@ from ui import screen_credential_decrypt
 from ui import screen_credential_generator
 from ui import screen_main
 from ui import screen_settings
+from ui import screen_test
 
 # Initializes the app's internal saved preferences (global variable).
 prefs = SavedPreferences()
@@ -74,6 +79,9 @@ prefs.init_configuration()
 
 # Initializes the app's internal database (global variable).
 app_db = AppDatabase(prefs)
+
+# Initializes the app's assets manager.
+app_assets = AppAssets(prefs, app_db)
 
 
 def disable_widget(qt_widget: QtWidgets.QWidget):
@@ -93,6 +101,38 @@ def enable_widget(qt_widget: QtWidgets.QWidget):
     """
     qt_widget.setEnabled(True)
 
+
+def push_all_data():
+    """
+    This function pushes the JSON schemas as well as the individual carousel, static HTML,
+    and custom images data.
+    :param anim: the animator window.
+    :return: the "app_db.push_json_schema"'s return value, anything it is.
+    """
+    # Round one: uploading the assets data.
+    is_success, j_1, msg = app_assets.push_assets(anim)
+    if not is_success:
+        return is_success, j_1, msg
+
+    # Round two: uploading the JSON schema.
+    is_success, j_2, msg = app_db.push_json_schema(anim)
+    if not is_success:
+        return is_success, j_2, msg
+
+    # Final return: if successful.
+    msg = 'All assets data and JSON schema have been uploaded and committed successfully!'
+    return True, (j_1, j_2), msg
+
+
+def refresh_all_data():
+    """
+    This function refreshes all data used in this app, from the main JSON schema
+    to the carousel, custom images, and static HTML.
+    :return: True (not significant, but it is expressed so that the multithreader won't freeze infinitely).
+    """
+    app_db.refresh_json_schema()
+    app_assets.get_main_qris()
+    return True
 
 class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.Ui_MainWindow):
 
@@ -190,6 +230,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         if is_valid:
             app_db.populate_credentials(decrypted_dict)
 
+            # Adjust the credentials of the assets manager.
+            app_assets.set_credentials(app_db.credentials)
+
             # Preparing the JSON schema, ensuring that we have a valid data.
             app_db.load_json_schema()
 
@@ -200,7 +243,7 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
                 disable_widget(self)
 
                 # Using multithreading to prevent GUI freezing [9]
-                t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+                t = ThreadWithResult(target=refresh_all_data, args=())
                 t.start()
                 while True:
                     if getattr(t, 'result', None):
@@ -443,12 +486,12 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             disable_widget(win_main)
 
             # Using multithreading to prevent GUI freezing [9]
-            t = ThreadWithResult(target=app_db.push_json_schema, args=(anim,))
+            t = ThreadWithResult(target=push_all_data, args=())
             t.start()
             while True:
                 if getattr(t, 'result', None):
                     # Obtaining the thread function's result
-                    is_success, j, msg = t.result
+                    is_success, _, msg = t.result
                     t.join()
 
                     break
@@ -483,12 +526,12 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         disable_widget(win_main)
 
         # Fake the progression.
-        msg = 'Menyinkronisasi basis data JSON dari repositori GitHub ...'
+        msg = 'Menyinkronisasi basis data JSON dan berkas aset dari repositori GitHub ...'
         anim.set_prog_msg(50, msg)
         Lg('main.ScreenMain.on_btn_sync_clicked', msg)
 
         # Using multithreading to prevent GUI freezing [9]
-        t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+        t = ThreadWithResult(target=refresh_all_data, args=())
         t.start()
         while True:
             if getattr(t, 'result', None):
@@ -902,6 +945,8 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
         super(FramePersembahan, self).__init__(*args, **kwargs)
         self.action = None
         self.cur_item = None
+        self.new_qris_loc = None
+        self.qris_loc = None
         self.setupUi(self)
 
         # Initiating the prompt dialog.
@@ -909,6 +954,10 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
 
         # Populating the forms list with existing forms.
         self.init_prefilled_banks()
+
+        # Attempt to download the current QRIS image from GitHub, then display the QRIS' pixmap.
+        self.init_qris()
+        self.reload_qris_pixmap()
 
         # Add slot connector.
         self.d.accepted.connect(self.on_dialog_banks_accepted)
@@ -929,6 +978,28 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
             )
             b.setText(f'{a['bank-abbr']} {a['bank-number']}')
             self.findChild(QtWidgets.QListWidget, 'list_banks').addItem(b)
+
+    def init_qris(self):
+
+        # Using multithreading to prevent GUI freezing [9]
+        # (Supress downloading so that the image will not get downloaded on frame change.)
+        t = ThreadWithResult(target=app_assets.get_main_qris, args=(True,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                qris_loc = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Save the main QRIS path and share it to every member of this class.
+        self.qris_loc = qris_loc
 
     def on_current_item_changed(self):
         # Save the state of the currently selected item.
@@ -1006,6 +1077,56 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
 
         # Prompt for user input value.
         self.call_action('edit', bank_abbr, bank_name, number, holder)
+
+    @pyqtSlot()
+    def on_btn_export_clicked(self):
+        # Ask the user wherein this image should be stored.
+        # (Qt5 has built-in overwrite confirmation dialog.)
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
+        exported_qris = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save the current QRIS image to ...', '', ff)[0]
+
+        if exported_qris == '':
+            # Report user cancelled operation.
+            QtWidgets.QMessageBox.information(
+                self, 'Operation Cancelled!', 'The QRIS image does not get exported.',
+                QtWidgets.QMessageBox.Ok
+            )
+
+        else:
+            Lg('main.FramePersembahan.on_btn_export_clicked', 'Exporting the current QRIS image ...')
+
+            # Read the current QRIS image file as bytes.
+            qris_image_as_byte = None
+            with open(self.qris_loc, 'rb') as fi:
+                qris_image_as_byte = fi.read()
+
+            # Save the file.
+            with open(exported_qris, 'wb') as fo:
+                fo.write(qris_image_as_byte)
+
+            # Report successful writing.
+            QtWidgets.QMessageBox.information(
+                self, 'Success!', f'QRIS image has been exported to: {exported_qris}',
+                QtWidgets.QMessageBox.Ok
+            )
+
+    @pyqtSlot()
+    def on_btn_img_select_clicked(self):
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
+        loc = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Pilih media dalam bentuk gambar untuk menggantikan QRIS saat ini', '', ff)[0]
+
+        # Display the currently selected image file for uploading.
+        if not loc == '':
+            self.new_qris_loc = loc
+            img_basename = os.path.basename(loc)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setText(img_basename)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setToolTip(loc)
+
+            # Change the QRIS pixmap.
+            pixmap = QPixmap(loc)
+            self.findChild(QtWidgets.QLabel, 'label_pixmap').setPixmap(pixmap)
 
     @pyqtSlot()
     def on_btn_move_down_clicked(self):
@@ -1088,6 +1209,11 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
         # Save to local file.
         app_db.save_local('offertory')
 
+        # Queue to overwrite the existing QRIS code image file.
+        # Only call this expression if there is a newer file selected.
+        if self.new_qris_loc is not None:
+            app_assets.queue_main_qris_change(self.new_qris_loc)
+
         # Display the save successful notice.
         QtWidgets.QMessageBox.information(
             self, 'Data tersimpan!',
@@ -1142,6 +1268,13 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
 
         # Update the current selection and state.
         self.on_current_item_changed()
+
+    def reload_qris_pixmap(self):
+        """ Reload the QRIS Pixmap in this frame's main display. [12] """
+        if os.path.isfile(self.qris_loc) and cur_fragment == 'fragment_persembahan':
+            Lg('main.FramePersembahan.reload_qris_pixmap', f'Displaying the QRIS image from path: {self.qris_loc} ...')
+            pixmap = QPixmap(self.qris_loc)
+            self.label_pixmap.setPixmap(pixmap)
 
     def call_action(self, action,
                     edit_bank_abbr: str = '',
@@ -1478,7 +1611,7 @@ class FrameWordPressHome(QtWidgets.QFrame, frame_wp_homepage.Ui_Frame):
 
     @pyqtSlot()
     def on_btn_img_select_clicked(self):
-        ff = 'Image files (*.jpeg *.jpg *.png)'
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
         loc = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Pilih media dalam bentuk gambar untuk dijadikan poster depan GKISalatiga.org', '', ff)[0]
 
@@ -1543,6 +1676,29 @@ class ScreenSettings(QtWidgets.QMainWindow, screen_settings.Ui_MainWindow):
         self.close()
 
 
+class ScreenTest(QtWidgets.QMainWindow, screen_test.Ui_MainWindow):
+    """ Used during development to try out new features and debug app's code. """
+
+    def __init__(self, *args, obj=None, **kwargs):
+        super(ScreenTest, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Preamble logging.
+        Lg('main.ScreenTest', '[DEBUG] Initiating the debug ScreenTest window ...')
+
+        # Which test method to run?
+        # (Uncomment the ones not needed.)
+        # self.test_001()
+
+    def test_001(self):
+        """ Displaying image using QPixmap. [12] """
+        pixmap = QPixmap('assets/test_image.png')
+        self.label_test.setPixmap(pixmap)
+
+
 if __name__ == '__main__':
     # Initiating QApplication.
     app = QtWidgets.QApplication(sys.argv)
@@ -1559,6 +1715,7 @@ if __name__ == '__main__':
     cur_fragment = 'fragment_default'
 
     # Establishing the main window.
+    # win = ScreenTest()  # --- debug only. uncomment if not needed.
     win = ScreenCredentialDecrypt()
     win.show()
 

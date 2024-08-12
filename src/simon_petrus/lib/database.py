@@ -104,7 +104,7 @@ class AppDatabase(object):
         Push the local changes to the JSON schema into GKISalatiga+ GitHub repository
         where the data will be released and delivered to the GKISalatiga+ mobile app users.
         :param anim_window: the loading screen animator to prevent screen freezing during operations.
-        :param msg: the commit message.
+        :param commit_msg: the commit message.
         :return: push status, the generic GitHub API JSON response, and the log message.
         """
         commit_msg = f'Manual update from "Simon Petrus"' if commit_msg == '' else commit_msg
@@ -113,7 +113,7 @@ class AppDatabase(object):
             # Retrieving the latest SHA in order to detect changes and checkpoints.
             msg = f'Retrieving the latest JSON schema\'s SHA checksum ...'
             Lg('lib.database.AppDatabase.push_json_schema', msg)
-            anim_window.set_prog_msg(40, msg)
+            anim_window.set_prog_msg(60, msg)
             r = requests.get(self.GITHUB_JSON_URL)
             latest_sha = r.json()['sha']
 
@@ -148,7 +148,7 @@ class AppDatabase(object):
 
             # Sending the http request.
             msg = f'Uploading the JSON data payload ...'
-            anim_window.set_prog_msg(75, msg)
+            anim_window.set_prog_msg(80, msg)
             Lg('lib.database.AppDatabase.push_json_schema', msg)
             # r = requests.put(self.GITHUB_JSON_URL, headers=headers, data=data_payload)
             r = requests.put(self.GITHUB_JSON_URL, headers=headers, json=data_payload)

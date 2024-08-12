@@ -1,5 +1,10 @@
 # Simon Petrus Changelog
 
+## v0.1.5 (10) --- 2024-08-13
+
+- New: Added QRIS code image updater
+- New: Added offertories bank transfer destination updater
+
 ## v0.1.4 (9) --- 2024-08-12
 
 - New: Added forms data editor
