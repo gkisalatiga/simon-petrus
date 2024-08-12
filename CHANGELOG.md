@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## Next Release
+
+- New: Added the interface to update agenda data
+
 ## v0.1.5 (9) --- 2024-08-13
 
 - New: Added QRIS code image updater

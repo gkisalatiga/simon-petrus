@@ -10,17 +10,17 @@
     <x>0</x>
     <y>0</y>
     <width>633</width>
-    <height>286</height>
+    <height>306</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Tambah/Edit Persembahan</string>
+   <string>Tambah/Edit Agenda</string>
   </property>
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>240</y>
+     <y>260</y>
      <width>591</width>
      <height>32</height>
     </rect>
@@ -60,7 +60,7 @@
     <rect>
      <x>10</x>
      <y>30</y>
-     <width>491</width>
+     <width>601</width>
      <height>21</height>
     </rect>
    </property>
@@ -73,7 +73,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Masukkan informasi terkait rekening bank yang akan ditampilkan kepada jemaat.</string>
+    <string>Masukkan informasi terkait kegiatan rutin mingguan oleh komisi/bapel di GKI Salatiga.</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -95,7 +95,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Singkatan Bank</string>
+    <string>Nama Kegiatan</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_6">
@@ -114,7 +114,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Nama Lengkap Bank</string>
+    <string>Hari Pelaksanaan</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_7">
@@ -133,7 +133,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Nomor Rekening</string>
+    <string>Waktu Pelaksanaan</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_8">
@@ -152,10 +152,10 @@
     </font>
    </property>
    <property name="text">
-    <string>Pemilik Rekening</string>
+    <string>Tempat Pelaksanaan</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="field_bank_abbr">
+  <widget class="QLineEdit" name="field_name">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -165,36 +165,10 @@
     </rect>
    </property>
    <property name="placeholderText">
-    <string>BCA, CIMB, MANDIRI, dsb.</string>
+    <string>Pelatihan Musik, Latihan Paduan Suara, SODA, dsb.</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="field_bank_name">
-   <property name="geometry">
-    <rect>
-     <x>180</x>
-     <y>100</y>
-     <width>431</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="placeholderText">
-    <string>Bank Central Asia, dsb.</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="field_number">
-   <property name="geometry">
-    <rect>
-     <x>180</x>
-     <y>130</y>
-     <width>431</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="placeholderText">
-    <string>Angka ditulis tanpa spasi maupun titik</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="field_holder">
+  <widget class="QLineEdit" name="field_place">
    <property name="geometry">
     <rect>
      <x>180</x>
@@ -204,14 +178,14 @@
     </rect>
    </property>
    <property name="placeholderText">
-    <string>Nama pemilik rekening bank (misal, GKI Salatiga)</string>
+    <string>Ruang Kana, Ruang Kapernaum, dsb.</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_status">
    <property name="geometry">
     <rect>
      <x>180</x>
-     <y>190</y>
+     <y>230</y>
      <width>431</width>
      <height>21</height>
     </rect>
@@ -220,7 +194,98 @@
     <string>-</string>
    </property>
   </widget>
+  <widget class="QTimeEdit" name="event_time">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>130</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="displayFormat">
+    <string>HH:mm</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="field_representative">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>190</y>
+     <width>431</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="placeholderText">
+    <string>Komisi Anak, Komisi Hubungan Internasional, dsb.</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>190</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Komisi/Bapel Pelaksana</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>260</x>
+     <y>130</y>
+     <width>291</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>50</weight>
+     <italic>true</italic>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Waktu Indonesia Barat (WIB/GMT+07)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="field_day">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>100</y>
+     <width>431</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>50</weight>
+     <italic>false</italic>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>[Placeholder Text]</string>
+   </property>
+  </widget>
  </widget>
+ <tabstops>
+  <tabstop>field_name</tabstop>
+  <tabstop>event_time</tabstop>
+  <tabstop>field_place</tabstop>
+  <tabstop>field_representative</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

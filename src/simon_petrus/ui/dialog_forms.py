@@ -71,7 +71,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Tambah/Edit Formulir"))
         self.app_title.setText(_translate("Dialog", "[Placeholder Title]"))
         self.app_title_2.setText(_translate("Dialog", "Masukkan URL formulir daring (misal, Google Forms) beserta judul formulir."))
         self.label.setText(_translate("Dialog", "Judul Formulir"))
