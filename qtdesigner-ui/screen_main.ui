@@ -112,8 +112,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>98</width>
-       <height>28</height>
+       <width>231</width>
+       <height>501</height>
       </rect>
      </property>
      <attribute name="label">
@@ -154,7 +154,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>193</width>
+         <width>215</width>
          <height>520</height>
         </rect>
        </property>
@@ -221,9 +221,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="commandLinkButton_5">
+         <widget class="QCommandLinkButton" name="cmd_persembahan">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Persembahan</string>
