@@ -1,5 +1,18 @@
 # Simon Petrus Changelog
 
+## v0.1.5 (10) --- 2024-08-13
+
+- New: Added QRIS code image updater
+- New: Added offertories bank transfer destination updater
+
+## v0.1.4 (9) --- 2024-08-12
+
+- New: Added forms data editor
+
+## v0.1.3 (7) --- 2024-08-11
+
+- Improved: Now using CalendarWidget instead of date line input when uploading Warta and Liturgi
+
 ## v0.1.2 (6) --- 2024-08-11
 
 - New: Added configuration and common settings window

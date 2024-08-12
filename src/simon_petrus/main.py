@@ -31,10 +31,15 @@ REFERENCES:
     - https://github.com/shailshouryya/save-thread-result
     [10] Prevent window resizing in PyQt5
     - https://stackoverflow.com/a/13775478
+    [11] Capitalize the first letter of words in a sentence
+    - https://stackoverflow.com/a/1549644
+    [12] Displaying image in PyQt5
+    - https://stackoverflow.com/a/51431109
 """
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSlot
+from PyQt5 import QtCore, QtGui, QtWidgets, Qt
+from PyQt5.QtCore import pyqtSlot, QPoint
+from PyQt5.QtGui import QPixmap
 import base64
 import json
 import os
@@ -42,6 +47,7 @@ import sys
 
 from PyQt5.QtWidgets import QMessageBox
 
+from lib.assets import AppAssets
 from lib.credentials import CredentialGenerator
 from lib.credentials import CredentialValidator
 from lib.database import AppDatabase
@@ -51,8 +57,12 @@ from lib.preferences import SavedPreferences
 from lib.string_validator import StringValidator
 from lib.uploader import Uploader
 from loading_animation import ScreenLoadingAnimation
+from ui import dialog_forms
+from ui import dialog_persembahan
 from ui import frame_default
+from ui import frame_formulir
 from ui import frame_liturgi_upload
+from ui import frame_persembahan
 from ui import frame_renungan
 from ui import frame_social_media
 from ui import frame_warta_upload
@@ -61,6 +71,7 @@ from ui import screen_credential_decrypt
 from ui import screen_credential_generator
 from ui import screen_main
 from ui import screen_settings
+from ui import screen_test
 
 # Initializes the app's internal saved preferences (global variable).
 prefs = SavedPreferences()
@@ -68,6 +79,9 @@ prefs.init_configuration()
 
 # Initializes the app's internal database (global variable).
 app_db = AppDatabase(prefs)
+
+# Initializes the app's assets manager.
+app_assets = AppAssets(prefs, app_db)
 
 
 def disable_widget(qt_widget: QtWidgets.QWidget):
@@ -87,6 +101,38 @@ def enable_widget(qt_widget: QtWidgets.QWidget):
     """
     qt_widget.setEnabled(True)
 
+
+def push_all_data():
+    """
+    This function pushes the JSON schemas as well as the individual carousel, static HTML,
+    and custom images data.
+    :param anim: the animator window.
+    :return: the "app_db.push_json_schema"'s return value, anything it is.
+    """
+    # Round one: uploading the assets data.
+    is_success, j_1, msg = app_assets.push_assets(anim)
+    if not is_success:
+        return is_success, j_1, msg
+
+    # Round two: uploading the JSON schema.
+    is_success, j_2, msg = app_db.push_json_schema(anim)
+    if not is_success:
+        return is_success, j_2, msg
+
+    # Final return: if successful.
+    msg = 'All assets data and JSON schema have been uploaded and committed successfully!'
+    return True, (j_1, j_2), msg
+
+
+def refresh_all_data():
+    """
+    This function refreshes all data used in this app, from the main JSON schema
+    to the carousel, custom images, and static HTML.
+    :return: True (not significant, but it is expressed so that the multithreader won't freeze infinitely).
+    """
+    app_db.refresh_json_schema()
+    app_assets.get_main_qris()
+    return True
 
 class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.Ui_MainWindow):
 
@@ -184,6 +230,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         if is_valid:
             app_db.populate_credentials(decrypted_dict)
 
+            # Adjust the credentials of the assets manager.
+            app_assets.set_credentials(app_db.credentials)
+
             # Preparing the JSON schema, ensuring that we have a valid data.
             app_db.load_json_schema()
 
@@ -194,7 +243,7 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
                 disable_widget(self)
 
                 # Using multithreading to prevent GUI freezing [9]
-                t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+                t = ThreadWithResult(target=refresh_all_data, args=())
                 t.start()
                 while True:
                     if getattr(t, 'result', None):
@@ -386,6 +435,8 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         # The fragment dictionary.
         const_fragment_dictionary = {
             'fragment_default': FrameDefault(),
+            'fragment_formulir': FrameFormulir(),
+            'fragment_persembahan': FramePersembahan(),
             'fragment_renungan': FrameRenungan(),
             'fragment_social_media': FrameSocialMedia(),
             'fragment_tata_ibadah': FrameTataIbadah(),
@@ -435,12 +486,12 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             disable_widget(win_main)
 
             # Using multithreading to prevent GUI freezing [9]
-            t = ThreadWithResult(target=app_db.push_json_schema, args=(anim,))
+            t = ThreadWithResult(target=push_all_data, args=())
             t.start()
             while True:
                 if getattr(t, 'result', None):
                     # Obtaining the thread function's result
-                    is_success, j, msg = t.result
+                    is_success, _, msg = t.result
                     t.join()
 
                     break
@@ -463,8 +514,9 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             )
 
             # Save the successfully pushed data locally.
-            if is_success:
-                app_db.save_local()
+            # (Commented out because it causes the "update-count" metadata to double.
+            '''if is_success:
+                app_db.save_local()'''
 
     @pyqtSlot()
     def on_btn_sync_clicked(self):
@@ -474,12 +526,12 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         disable_widget(win_main)
 
         # Fake the progression.
-        msg = 'Menyinkronisasi basis data JSON dari repositori GitHub ...'
+        msg = 'Menyinkronisasi basis data JSON dan berkas aset dari repositori GitHub ...'
         anim.set_prog_msg(50, msg)
         Lg('main.ScreenMain.on_btn_sync_clicked', msg)
 
         # Using multithreading to prevent GUI freezing [9]
-        t = ThreadWithResult(target=app_db.refresh_json_schema, args=())
+        t = ThreadWithResult(target=refresh_all_data, args=())
         t.start()
         while True:
             if getattr(t, 'result', None):
@@ -513,9 +565,29 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             self.clear_fragment_and_display(cur_fragment)
 
     @pyqtSlot()
+    def on_cmd_formulir_clicked(self):
+        global cur_fragment
+        cur_fragment = 'fragment_formulir'
+        self.clear_fragment_and_display(cur_fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
+
+    @pyqtSlot()
     def on_cmd_liturgi_clicked(self):
         global cur_fragment
         cur_fragment = 'fragment_tata_ibadah'
+        self.clear_fragment_and_display(cur_fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
+
+    @pyqtSlot()
+    def on_cmd_persembahan_clicked(self):
+        global cur_fragment
+        cur_fragment = 'fragment_persembahan'
         self.clear_fragment_and_display(cur_fragment)
 
         # Prevents freezing [5]
@@ -563,10 +635,688 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         pass
 
 
+class DialogForms(QtWidgets.QDialog, dialog_forms.Ui_Dialog):
+    def __init__(self, *args, obj=None, title='', **kwargs):
+        super(DialogForms, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Input fields validation.
+        self.field_title.textChanged.connect(self.validate_fields)
+        self.field_url.textChanged.connect(self.validate_fields)
+
+    def validate_fields(self):
+        title = self.findChild(QtWidgets.QLineEdit, 'field_title').text().strip()
+        url = self.findChild(QtWidgets.QLineEdit, 'field_url').text().strip()
+
+        if title == '' or url == '':
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('Anda harus memasukkan judul dan tautan URL!')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(False)
+        elif not url.startswith('https://'):
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('URL Anda harus dimulai dengan "https://"!')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(False)
+        else:
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('-')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(True)
+
+
+class DialogPersembahan(QtWidgets.QDialog, dialog_persembahan.Ui_Dialog):
+    def __init__(self, *args, obj=None, title='', **kwargs):
+        super(DialogPersembahan, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Input fields validation.
+        self.field_bank_abbr.textChanged.connect(self.validate_fields)
+        self.field_bank_name.textChanged.connect(self.validate_fields)
+        self.field_number.textChanged.connect(self.validate_fields)
+        self.field_holder.textChanged.connect(self.validate_fields)
+
+    def validate_fields(self):
+        bank_abbr = self.findChild(QtWidgets.QLineEdit, 'field_bank_abbr').text().strip()
+        bank_name = self.findChild(QtWidgets.QLineEdit, 'field_bank_name').text().strip()
+        number = self.findChild(QtWidgets.QLineEdit, 'field_number').text().strip()
+        holder = self.findChild(QtWidgets.QLineEdit, 'field_holder').text().strip()
+
+        if bank_abbr == '' or bank_name == '' or number == '' or holder == '':
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('Anda harus memasukkan semua masukan!')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(False)
+        else:
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('-')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(True)
+
+
 class FrameDefault(QtWidgets.QFrame, frame_default.Ui_Frame):
     def __init__(self, *args, obj=None, **kwargs):
         super(FrameDefault, self).__init__(*args, **kwargs)
         self.setupUi(self)
+
+
+class FrameFormulir(QtWidgets.QFrame, frame_formulir.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameFormulir, self).__init__(*args, **kwargs)
+        self.action = ''
+        self.cur_item = QtWidgets.QListWidgetItem()
+        self.setupUi(self)
+
+        # Initiating the prompt dialog.
+        self.d = DialogForms(self)
+
+        # Populating the forms list with existing forms.
+        self.init_prefilled_forms()
+
+        # Add slot connector.
+        self.d.accepted.connect(self.on_dialog_forms_accepted)
+        self.list_forms.currentItemChanged.connect(self.on_current_item_changed)
+
+    def init_prefilled_forms(self):
+        """
+        Populate the QListWidget with the forms list found in the GKI Salatiga+ JSON data.
+        :return: nothing.
+        """
+        # Iterating through every list of existing forms in the JSON schema.
+        for a in app_db.db['forms']:
+            # Adding the list item.
+            b = QtWidgets.QListWidgetItem()
+            b.setText(a['title'])
+            b.setToolTip(a['url'])
+            self.findChild(QtWidgets.QListWidget, 'list_forms').addItem(b)
+
+    @pyqtSlot()
+    def on_btn_add_clicked(self):
+        # Prompt for user input value.
+        self.call_action('new')
+
+    @pyqtSlot()
+    def on_btn_delete_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The title of the currently selected item.
+        title = self.cur_item.text()
+
+        # Warn the user about deletion.
+        r = (QtWidgets.QMessageBox.warning(
+            self, 'Penghapusan data formulir.',
+            f'Apakah Anda yakin akan menghapus formulir: {title}?\nTindakan ini tidak dapat dikembalikan!',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        ))
+
+        # Validating the response.
+        if r == QtWidgets.QMessageBox.Yes:
+            # Get the selected item's row position.
+            y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+            # Remove the selected item from the list.
+            self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+            # Logging.
+            Lg('main.FrameFormulir.on_btn_delete_clicked', f'Removed the form: {title} successfully!')
+        else:
+            Lg('main.FrameFormulir.on_btn_delete_clicked', f'Phew! It did not get removed.')
+
+    @pyqtSlot()
+    def on_btn_edit_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The selected item's title and url.
+        title = self.cur_item.text()
+        url = self.cur_item.toolTip()
+
+        # Prompt for user input value.
+        self.call_action('edit', title, url)
+
+    @pyqtSlot()
+    def on_btn_move_down_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == widget_size - 1:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos + 1
+        self.findChild(QtWidgets.QListWidget, 'list_forms').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_move_up_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == 0:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos - 1
+        self.findChild(QtWidgets.QListWidget, 'list_forms').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_save_clicked(self):
+        # Creating the JSON array to replace the old one.
+        a = []
+
+        # Iterating through every item.
+        for i in range(self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()):
+
+            # The list item.
+            b = self.findChild(QtWidgets.QListWidget, 'list_forms').item(i)
+
+            # The item title and URL.
+            title = b.text()
+            url = b.toolTip()
+
+            # Add this item to the JSON array.
+            a.append({
+                'title': title,
+                'url': url
+            })
+
+        # Overwrite the existing forms object.
+        app_db.db['forms'] = a
+
+        # Save to local file.
+        app_db.save_local('forms')
+
+        # Display the save successful notice.
+        QtWidgets.QMessageBox.information(
+            self, 'Data tersimpan!',
+            'Perubahan data berhasil disimpan. Silahkan unggah pembaruan supaya data dapat dilihat oleh jemaat.',
+            QtWidgets.QMessageBox.Ok
+        )
+
+    def on_current_item_changed(self):
+        # Save the state of the currently selected item.
+        self.cur_item = self.findChild(QtWidgets.QListWidget, 'list_forms').currentItem()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()
+
+        # The selected item's index.
+        a = self.findChild(QtWidgets.QListWidget, 'list_forms').currentItem()
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(a).row()
+
+        if y_pos == 0:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(False)
+        elif y_pos == widget_size - 1:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(False)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+        else:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+
+    @pyqtSlot()
+    def on_dialog_forms_accepted(self):
+        # The input dialog's title and URL fields.
+        title = self.d.findChild(QtWidgets.QLineEdit, 'field_title').text().strip()
+        url = self.d.findChild(QtWidgets.QLineEdit, 'field_url').text().strip()
+
+        if self.action == 'new':
+            Lg('main.FrameFormulir.on_dialog_forms_accepted', f'Creating a new form: {title} ...')
+
+            # Add a new item to the list.
+            a = QtWidgets.QListWidgetItem()
+            a.setText(title)
+            a.setToolTip(url)
+            self.findChild(QtWidgets.QListWidget, 'list_forms').addItem(a)
+
+            # Set the focus to the newly created item.
+            self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentItem(a)
+
+        elif self.action == 'edit':
+            Lg('main.FrameFormulir.on_dialog_forms_accepted', f'Editing an existing form: {title} ...')
+
+            # Edit the selected item's value.
+            self.cur_item.setText(title)
+            self.cur_item.setToolTip(url)
+
+        # Update the current selection and state.
+        self.on_current_item_changed()
+
+    def call_action(self, action, edit_title: str = '', edit_url: str = ''):
+        """
+        Determine what forms action to take, as well as displaying the dialog.
+        Possible values; 'new' and 'edit'.
+        :param action: between 'new' and 'edit', specifies the forms action to undergo.
+        :param edit_title: (optional) the current form's title to edit.
+        :param edit_url: (optional) the current form's url to edit.
+        :return: nothing.
+        """
+        self.action = action
+
+        # Change the dialog's title according to the passed value.
+        if action == 'new':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Tambahkan Formulir Baru')
+
+            # Clear the existing title and URL.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_title').setText('')
+            self.d.findChild(QtWidgets.QLineEdit, 'field_url').setText('')
+
+        elif action == 'edit':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Edit Formulir')
+
+            # Prefill with existing values.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_title').setText(edit_title)
+            self.d.findChild(QtWidgets.QLineEdit, 'field_url').setText(edit_url)
+
+        # Show the dialog.
+        self.d.show()
+
+        # Validate preliminary field values.
+        self.d.validate_fields()
+
+
+class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
+
+    # The QListWidgetItem default role.
+    DEFAULT_ITEM_ROLE = 1048577  # --- 2**20 + 1
+
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FramePersembahan, self).__init__(*args, **kwargs)
+        self.action = None
+        self.cur_item = None
+        self.new_qris_loc = None
+        self.qris_loc = None
+        self.setupUi(self)
+
+        # Initiating the prompt dialog.
+        self.d = DialogPersembahan(self)
+
+        # Populating the forms list with existing forms.
+        self.init_prefilled_banks()
+
+        # Attempt to download the current QRIS image from GitHub, then display the QRIS' pixmap.
+        self.init_qris()
+        self.reload_qris_pixmap()
+
+        # Add slot connector.
+        self.d.accepted.connect(self.on_dialog_banks_accepted)
+        self.list_banks.currentItemChanged.connect(self.on_current_item_changed)
+
+    def init_prefilled_banks(self):
+        """
+        Populate the QListWidget with the bank list found in the GKI Salatiga+ JSON data.
+        :return: nothing.
+        """
+        # Iterating through every list of existing forms in the JSON schema.
+        for a in app_db.db['offertory']:
+            # Adding the list item.
+            b = QtWidgets.QListWidgetItem()
+            b.setData(
+                self.DEFAULT_ITEM_ROLE,
+                (a['bank-name'], a['bank-abbr'], a['bank-number'], a['account-holder'])
+            )
+            b.setText(f'{a['bank-abbr']} {a['bank-number']}')
+            self.findChild(QtWidgets.QListWidget, 'list_banks').addItem(b)
+
+    def init_qris(self):
+
+        # Using multithreading to prevent GUI freezing [9]
+        # (Supress downloading so that the image will not get downloaded on frame change.)
+        t = ThreadWithResult(target=app_assets.get_main_qris, args=(True,))
+        t.start()
+        while True:
+            if getattr(t, 'result', None):
+                # Obtaining the thread function's result
+                qris_loc = t.result
+                t.join()
+
+                break
+            else:
+                # When this block is reached, it means the function has not returned any value
+                # While we wait for the thread response to be returned, let us prevent
+                # Qt5 GUI freezing by repeatedly executing the following line:
+                QtCore.QCoreApplication.processEvents()
+
+        # Save the main QRIS path and share it to every member of this class.
+        self.qris_loc = qris_loc
+
+    def on_current_item_changed(self):
+        # Save the state of the currently selected item.
+        self.cur_item = self.findChild(QtWidgets.QListWidget, 'list_banks').currentItem()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_banks').__len__()
+
+        # The selected item's index.
+        a = self.findChild(QtWidgets.QListWidget, 'list_banks').currentItem()
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_banks').indexFromItem(a).row()
+
+        if y_pos == 0:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(False)
+        elif y_pos == widget_size - 1:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(False)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+        else:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+
+        # Update the display data.
+        item_data = self.findChild(QtWidgets.QListWidget, 'list_banks').item(y_pos).data(self.DEFAULT_ITEM_ROLE)
+        self.findChild(QtWidgets.QLabel, 'label_bank_name').setText(item_data[0])
+        self.findChild(QtWidgets.QLabel, 'label_bank_abbr').setText(item_data[1])
+        self.findChild(QtWidgets.QLabel, 'label_number').setText(item_data[2])
+        self.findChild(QtWidgets.QLabel, 'label_holder').setText(item_data[3])
+
+    @pyqtSlot()
+    def on_btn_add_clicked(self):
+        # Prompt for user input value.
+        self.call_action('new')
+
+    @pyqtSlot()
+    def on_btn_delete_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The title of the currently selected item.
+        title = self.cur_item.text()
+
+        # Warn the user about deletion.
+        r = (QtWidgets.QMessageBox.warning(
+            self, 'Penghapusan data transfer bank.',
+            f'Apakah Anda yakin akan menghapus transfer bank: {title} dari GKI Salatiga+?'
+            f'\nTindakan ini tidak dapat dikembalikan!',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        ))
+
+        # Validating the response.
+        if r == QtWidgets.QMessageBox.Yes:
+            # Get the selected item's row position.
+            y_pos = self.findChild(QtWidgets.QListWidget, 'list_banks').indexFromItem(self.cur_item).row()
+
+            # Remove the selected item from the list.
+            self.findChild(QtWidgets.QListWidget, 'list_banks').takeItem(y_pos)
+
+            # Logging.
+            Lg('main.FramePersembahan.on_btn_delete_clicked', f'Removed the bank info: {title} successfully!')
+        else:
+            Lg('main.FramePersembahan.on_btn_delete_clicked', f'Phew! It did not get removed.')
+
+    @pyqtSlot()
+    def on_btn_edit_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The selected item's data.
+        item_data = self.cur_item.data(self.DEFAULT_ITEM_ROLE)
+        bank_name = item_data[0]
+        bank_abbr = item_data[1]
+        number = item_data[2].replace('.', '')
+        holder = item_data[3]
+
+        # Prompt for user input value.
+        self.call_action('edit', bank_abbr, bank_name, number, holder)
+
+    @pyqtSlot()
+    def on_btn_export_clicked(self):
+        # Ask the user wherein this image should be stored.
+        # (Qt5 has built-in overwrite confirmation dialog.)
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
+        exported_qris = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save the current QRIS image to ...', '', ff)[0]
+
+        if exported_qris == '':
+            # Report user cancelled operation.
+            QtWidgets.QMessageBox.information(
+                self, 'Operation Cancelled!', 'The QRIS image does not get exported.',
+                QtWidgets.QMessageBox.Ok
+            )
+
+        else:
+            Lg('main.FramePersembahan.on_btn_export_clicked', 'Exporting the current QRIS image ...')
+
+            # Read the current QRIS image file as bytes.
+            qris_image_as_byte = None
+            with open(self.qris_loc, 'rb') as fi:
+                qris_image_as_byte = fi.read()
+
+            # Save the file.
+            with open(exported_qris, 'wb') as fo:
+                fo.write(qris_image_as_byte)
+
+            # Report successful writing.
+            QtWidgets.QMessageBox.information(
+                self, 'Success!', f'QRIS image has been exported to: {exported_qris}',
+                QtWidgets.QMessageBox.Ok
+            )
+
+    @pyqtSlot()
+    def on_btn_img_select_clicked(self):
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
+        loc = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Pilih media dalam bentuk gambar untuk menggantikan QRIS saat ini', '', ff)[0]
+
+        # Display the currently selected image file for uploading.
+        if not loc == '':
+            self.new_qris_loc = loc
+            img_basename = os.path.basename(loc)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setText(img_basename)
+            self.findChild(QtWidgets.QLabel, 'txt_img_loc').setToolTip(loc)
+
+            # Change the QRIS pixmap.
+            pixmap = QPixmap(loc)
+            self.findChild(QtWidgets.QLabel, 'label_pixmap').setPixmap(pixmap)
+
+    @pyqtSlot()
+    def on_btn_move_down_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_banks').__len__()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_banks').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == widget_size - 1:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_banks').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos + 1
+        self.findChild(QtWidgets.QListWidget, 'list_banks').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_banks').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_move_up_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_banks').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == 0:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_banks').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos - 1
+        self.findChild(QtWidgets.QListWidget, 'list_banks').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_banks').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_save_clicked(self):
+        # Creating the JSON array to replace the old one.
+        a = []
+
+        # Iterating through every item.
+        for i in range(self.findChild(QtWidgets.QListWidget, 'list_banks').__len__()):
+
+            # The list item.
+            b = self.findChild(QtWidgets.QListWidget, 'list_banks').item(i)
+
+            # The item title and URL.
+            item_data = b.data(self.DEFAULT_ITEM_ROLE)
+            bank_name = item_data[0]
+            bank_abbr = item_data[1]
+            number = item_data[2]
+            holder = item_data[3]
+
+            # Add this item to the JSON array.
+            a.append({
+                'bank-name': bank_name,
+                'bank-abbr': bank_abbr,
+                'bank-number': number,
+                'account-holder': holder
+            })
+
+        # Overwrite the existing forms object.
+        app_db.db['offertory'] = a
+
+        # Save to local file.
+        app_db.save_local('offertory')
+
+        # Queue to overwrite the existing QRIS code image file.
+        # Only call this expression if there is a newer file selected.
+        if self.new_qris_loc is not None:
+            app_assets.queue_main_qris_change(self.new_qris_loc)
+
+        # Display the save successful notice.
+        QtWidgets.QMessageBox.information(
+            self, 'Data tersimpan!',
+            'Perubahan data berhasil disimpan. Silahkan unggah pembaruan supaya data dapat dilihat oleh jemaat.',
+            QtWidgets.QMessageBox.Ok
+        )
+
+    def on_dialog_banks_accepted(self):
+        # The input dialog's field data.
+        bank_name = self.d.findChild(QtWidgets.QLineEdit, 'field_bank_name').text().strip()
+        bank_abbr = self.d.findChild(QtWidgets.QLineEdit, 'field_bank_abbr').text().strip()
+        number = self.d.findChild(QtWidgets.QLineEdit, 'field_number').text().strip()
+        holder = self.d.findChild(QtWidgets.QLineEdit, 'field_holder').text().strip()
+
+        # Visually and string-wise edit the field data to match standard. [11]
+        bank_abbr = bank_abbr.upper()
+
+        s = [w for w in number]
+        s.insert(3, '.') if len(s) >= 3 else s
+        s.insert(6, '.') if len(s) >= 6 else s
+        s.insert(10, '.') if len(s) >= 10 else s
+        number = ''.join(s)
+
+        # The display title.
+        display_text = f'{bank_abbr} {number}'
+
+        if self.action == 'new':
+            Lg('main.FramePersembahan.on_dialog_banks_accepted', f'Creating a new bank: {display_text} ...')
+
+            # Add a new item to the list.
+            # Adding the list item.
+            a = QtWidgets.QListWidgetItem()
+            a.setData(
+                self.DEFAULT_ITEM_ROLE,
+                (bank_name, bank_abbr, number, holder)
+            )
+            a.setText(display_text)
+            self.findChild(QtWidgets.QListWidget, 'list_banks').addItem(a)
+
+            # Set the focus to the newly created item.
+            self.findChild(QtWidgets.QListWidget, 'list_banks').setCurrentItem(a)
+
+        elif self.action == 'edit':
+            Lg('main.FramePersembahan.on_dialog_forms_accepted', f'Editing an existing bank info: {display_text} ...')
+
+            # Edit the selected item's value.
+            self.cur_item.setText(display_text)
+            self.cur_item.setData(
+                self.DEFAULT_ITEM_ROLE,
+                (bank_name, bank_abbr, number, holder)
+            )
+
+        # Update the current selection and state.
+        self.on_current_item_changed()
+
+    def reload_qris_pixmap(self):
+        """ Reload the QRIS Pixmap in this frame's main display. [12] """
+        if os.path.isfile(self.qris_loc) and cur_fragment == 'fragment_persembahan':
+            Lg('main.FramePersembahan.reload_qris_pixmap', f'Displaying the QRIS image from path: {self.qris_loc} ...')
+            pixmap = QPixmap(self.qris_loc)
+            self.label_pixmap.setPixmap(pixmap)
+
+    def call_action(self, action,
+                    edit_bank_abbr: str = '',
+                    edit_bank_name: str = '',
+                    edit_number: str = '',
+                    edit_holder: str = ''):
+        """
+        Determine what bank action to take, as well as displaying the dialog.
+        Possible values; 'new' and 'edit'.
+        :param action: between 'new' and 'edit', specifies the bank action to undergo.
+        :param edit_bank_abbr: (optional) the current bank's abbreviation to edit.
+        :param edit_bank_name: (optional) the current bank's full name to edit.
+        :param edit_number: (optional) the current bank's account number to edit.
+        :param edit_holder: (optional) the current bank's account holder to edit.
+        :return: nothing.
+        """
+        self.action = action
+
+        # Change the dialog's title according to the passed value.
+        if action == 'new':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Tambahkan Info Transfer Bank Baru')
+
+            # Clear the existing title and URL.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_bank_abbr').setText('')
+            self.d.findChild(QtWidgets.QLineEdit, 'field_bank_name').setText('')
+            self.d.findChild(QtWidgets.QLineEdit, 'field_number').setText('')
+            self.d.findChild(QtWidgets.QLineEdit, 'field_holder').setText('')
+
+        elif action == 'edit':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Edit Info Transfer Bank')
+
+            # Prefill with existing values.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_bank_abbr').setText(edit_bank_abbr)
+            self.d.findChild(QtWidgets.QLineEdit, 'field_bank_name').setText(edit_bank_name)
+            self.d.findChild(QtWidgets.QLineEdit, 'field_number').setText(edit_number)
+            self.d.findChild(QtWidgets.QLineEdit, 'field_holder').setText(edit_holder)
+
+        # Show the dialog.
+        self.d.show()
+
+        # Validate preliminary field values.
+        self.d.validate_fields()
 
 
 class FrameRenungan(QtWidgets.QFrame, frame_renungan.Ui_Frame):
@@ -590,7 +1340,7 @@ class FrameRenungan(QtWidgets.QFrame, frame_renungan.Ui_Frame):
         app_db.db['ykb'][4]['url'] = self.findChild(QtWidgets.QLineEdit, 'field_lansia').text()
 
         # Save to local file.
-        app_db.save_local()
+        app_db.save_local('ykb')
 
         # Display the save successful notice.
         QtWidgets.QMessageBox.information(
@@ -623,7 +1373,7 @@ class FrameSocialMedia(QtWidgets.QFrame, frame_social_media.Ui_Frame):
         app_db.db['url-profile']['youtube'] = self.findChild(QtWidgets.QLineEdit, 'field_yt').text()
 
         # Save to local file.
-        app_db.save_local()
+        app_db.save_local('url-profile')
 
         # Display the save successful notice.
         QtWidgets.QMessageBox.information(
@@ -640,32 +1390,19 @@ class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
         self.pdf_loc = None
         self.setupUi(self)
 
-        # Trigger the rendering of initial value.
-        self.on_date_picker_date_time_changed()
-
         # Connect the slots.
-        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+        self.date_picker.selectionChanged.connect(self.on_date_picker_selection_changed)
 
     @pyqtSlot()
-    def on_date_picker_date_time_changed(self):
-        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
-        cur_date_int = []
-        for l in cur_date:
-            cur_date_int.append(int(l))
+    def on_date_picker_selection_changed(self):
+        cur_date = self.findChild(QtWidgets.QCalendarWidget, 'date_picker').selectedDate()
+        cur_date_int = [cur_date.day(), cur_date.month(), cur_date.year()]
 
         # Validate the current date string.
         cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
 
-        # Get day of the week string.
-        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
-        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
-
-        # Print the date snippet.
-        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
-        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
-
         # Store the properly formated and localized date, which will become the post title.
-        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} {cur_date_int[2]}'
 
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):
@@ -736,30 +1473,19 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
         self.setupUi(self)
 
         # Trigger the rendering of initial value.
-        self.on_date_picker_date_time_changed()
-
-        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+        self.on_date_picker_selection_changed()
+        self.date_picker.selectionChanged.connect(self.on_date_picker_selection_changed)
 
     @pyqtSlot()
-    def on_date_picker_date_time_changed(self):
-        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
-        cur_date_int = []
-        for l in cur_date:
-            cur_date_int.append(int(l))
+    def on_date_picker_selection_changed(self):
+        cur_date = self.findChild(QtWidgets.QCalendarWidget, 'date_picker').selectedDate()
+        cur_date_int = [cur_date.day(), cur_date.month(), cur_date.year()]
 
         # Validate the current date string.
         cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
 
-        # Get day of the week string.
-        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
-        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
-
-        # Print the date snippet.
-        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
-        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
-
         # Store the properly formated and localized date, which will become the post title.
-        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} {cur_date_int[2]}'
 
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):
@@ -885,7 +1611,7 @@ class FrameWordPressHome(QtWidgets.QFrame, frame_wp_homepage.Ui_Frame):
 
     @pyqtSlot()
     def on_btn_img_select_clicked(self):
-        ff = 'Image files (*.jpeg *.jpg *.png)'
+        ff = 'Image files (*.bmp *.jpeg *.jpg *.png *.webp)'
         loc = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Pilih media dalam bentuk gambar untuk dijadikan poster depan GKISalatiga.org', '', ff)[0]
 
@@ -950,6 +1676,29 @@ class ScreenSettings(QtWidgets.QMainWindow, screen_settings.Ui_MainWindow):
         self.close()
 
 
+class ScreenTest(QtWidgets.QMainWindow, screen_test.Ui_MainWindow):
+    """ Used during development to try out new features and debug app's code. """
+
+    def __init__(self, *args, obj=None, **kwargs):
+        super(ScreenTest, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Preamble logging.
+        Lg('main.ScreenTest', '[DEBUG] Initiating the debug ScreenTest window ...')
+
+        # Which test method to run?
+        # (Uncomment the ones not needed.)
+        # self.test_001()
+
+    def test_001(self):
+        """ Displaying image using QPixmap. [12] """
+        pixmap = QPixmap('assets/test_image.png')
+        self.label_test.setPixmap(pixmap)
+
+
 if __name__ == '__main__':
     # Initiating QApplication.
     app = QtWidgets.QApplication(sys.argv)
@@ -966,6 +1715,7 @@ if __name__ == '__main__':
     cur_fragment = 'fragment_default'
 
     # Establishing the main window.
+    # win = ScreenTest()  # --- debug only. uncomment if not needed.
     win = ScreenCredentialDecrypt()
     win.show()
 

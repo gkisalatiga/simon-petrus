@@ -104,7 +104,7 @@ class AppDatabase(object):
         Push the local changes to the JSON schema into GKISalatiga+ GitHub repository
         where the data will be released and delivered to the GKISalatiga+ mobile app users.
         :param anim_window: the loading screen animator to prevent screen freezing during operations.
-        :param msg: the commit message.
+        :param commit_msg: the commit message.
         :return: push status, the generic GitHub API JSON response, and the log message.
         """
         commit_msg = f'Manual update from "Simon Petrus"' if commit_msg == '' else commit_msg
@@ -113,17 +113,12 @@ class AppDatabase(object):
             # Retrieving the latest SHA in order to detect changes and checkpoints.
             msg = f'Retrieving the latest JSON schema\'s SHA checksum ...'
             Lg('lib.database.AppDatabase.push_json_schema', msg)
-            anim_window.set_prog_msg(40, msg)
+            anim_window.set_prog_msg(60, msg)
             r = requests.get(self.GITHUB_JSON_URL)
             latest_sha = r.json()['sha']
 
             # DEBUG. Please comment out on production.
             # print(r.json())
-
-            # Preparing the JSON metadata.
-            self.db_meta['update-count'] += 1
-            self.db_meta['last-actor'] = 'SIMON_PETRUS'
-            self.db_meta['last-update'] = round(time.time())
 
             # Merging the "meta" and "data" of the JSON schema.
             j = {
@@ -153,7 +148,7 @@ class AppDatabase(object):
 
             # Sending the http request.
             msg = f'Uploading the JSON data payload ...'
-            anim_window.set_prog_msg(75, msg)
+            anim_window.set_prog_msg(80, msg)
             Lg('lib.database.AppDatabase.push_json_schema', msg)
             # r = requests.put(self.GITHUB_JSON_URL, headers=headers, data=data_payload)
             r = requests.put(self.GITHUB_JSON_URL, headers=headers, json=data_payload)
@@ -172,12 +167,19 @@ class AppDatabase(object):
             Lg('lib.database.AppDatabase.push_json_schema', msg)
             return False, {}, msg
 
-    def save_local(self):
+    def save_local(self, updated_item: str = 'unspecified'):
         """
         Save the current state of the JSON schema into the local file.
+        :param updated_item: the latest updated JSON item.
         :return: nothing.
         """
         with open(self.prefs.JSON_DATA_SCHEMA, 'w') as fo:
+            # Preparing the JSON metadata.
+            self.db_meta['update-count'] += 1
+            self.db_meta['last-update'] = round(time.time())
+            self.db_meta['last-actor'] = 'SIMON_PETRUS'
+            self.db_meta['last-updated-item'] = updated_item
+
             # Prepare the dict to convert to JSON.
             a = {
                 'meta': self.db_meta,
@@ -185,5 +187,5 @@ class AppDatabase(object):
             }
 
             # Write/dump the JSON file.
-            json.dump(a, fo)
+            json.dump(a, fo, ensure_ascii=False, indent=4)
             Lg('lib.database.AppDatabase.save_local', f'Saved JSON schema successfully!')

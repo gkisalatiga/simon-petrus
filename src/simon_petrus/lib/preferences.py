@@ -28,10 +28,14 @@ class SavedPreferences(object):
     # The app's current session's temporary folder.
     TEMP_DIRECTORY = tempfile.mkdtemp(prefix='simon_petrus-')
 
+    # The GKI Salatiga+ asset data folder.
+    ASSETS_DIRECTORY = CONF_DIRECTORY + os.sep + 'assets'
+
     # Unescaped double backslash problem mitigation in Windows OS.
     if os.name == 'nt':
         CONF_DIRECTORY = CONF_DIRECTORY.replace('\\', '/')
         TEMP_DIRECTORY = TEMP_DIRECTORY.replace('\\', '/')
+        ASSETS_DIRECTORY = ASSETS_DIRECTORY.replace('\\', '/')
 
     # The app's settings JSON file.
     JSON_SETTINGS = CONF_DIRECTORY + os.sep + 'saved_preferences.json'
@@ -76,6 +80,13 @@ class SavedPreferences(object):
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'User config folder created: {self.CONF_DIRECTORY}')
         except FileExistsError:
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'User config folder already exists: {self.CONF_DIRECTORY}')
+
+        # Ensuring that the assets directory exists.
+        try:
+            os.makedirs(self.ASSETS_DIRECTORY, exist_ok=True)
+            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Assets directory created: {self.ASSETS_DIRECTORY}')
+        except FileExistsError:
+            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Assets folder already exists: {self.ASSETS_DIRECTORY}')
         
         # Ensuring that the temporary directory exists.
         try:
