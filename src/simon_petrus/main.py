@@ -34,7 +34,7 @@ REFERENCES:
 """
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, QPoint
 import base64
 import json
 import os
@@ -51,7 +51,9 @@ from lib.preferences import SavedPreferences
 from lib.string_validator import StringValidator
 from lib.uploader import Uploader
 from loading_animation import ScreenLoadingAnimation
+from ui import dialog_forms
 from ui import frame_default
+from ui import frame_formulir
 from ui import frame_liturgi_upload
 from ui import frame_renungan
 from ui import frame_social_media
@@ -386,6 +388,7 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         # The fragment dictionary.
         const_fragment_dictionary = {
             'fragment_default': FrameDefault(),
+            'fragment_formulir': FrameFormulir(),
             'fragment_renungan': FrameRenungan(),
             'fragment_social_media': FrameSocialMedia(),
             'fragment_tata_ibadah': FrameTataIbadah(),
@@ -463,8 +466,9 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             )
 
             # Save the successfully pushed data locally.
-            if is_success:
-                app_db.save_local()
+            # (Commented out because it causes the "update-count" metadata to double.
+            '''if is_success:
+                app_db.save_local()'''
 
     @pyqtSlot()
     def on_btn_sync_clicked(self):
@@ -511,6 +515,16 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             # Refresh the Qt widget of the currently active fragment.
             global cur_fragment
             self.clear_fragment_and_display(cur_fragment)
+
+    @pyqtSlot()
+    def on_cmd_formulir_clicked(self):
+        global cur_fragment
+        cur_fragment = 'fragment_formulir'
+        self.clear_fragment_and_display(cur_fragment)
+
+        # Prevents freezing [5]
+        QtCore.QCoreApplication.processEvents()
+        pass
 
     @pyqtSlot()
     def on_cmd_liturgi_clicked(self):
@@ -563,10 +577,285 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         pass
 
 
+class DialogForms(QtWidgets.QDialog, dialog_forms.Ui_Dialog):
+    def __init__(self, *args, obj=None, title='', **kwargs):
+        super(DialogForms, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+        # Prevent resizing. [10]
+        self.setFixedSize(self.size())
+
+        # Input fields validation.
+        self.field_title.textChanged.connect(self.validate_fields)
+        self.field_url.textChanged.connect(self.validate_fields)
+
+    def validate_fields(self):
+        title = self.findChild(QtWidgets.QLineEdit, 'field_title').text().strip()
+        url = self.findChild(QtWidgets.QLineEdit, 'field_url').text().strip()
+
+        if title == '' or url == '':
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('Anda harus memasukkan judul dan tautan URL!')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(False)
+        elif not url.startswith('https://'):
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('URL Anda harus dimulai dengan "https://"!')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(False)
+        else:
+            self.findChild(QtWidgets.QLabel, 'label_status').setText('-')
+            self.findChild(QtWidgets.QDialogButtonBox, 'button_box').buttons()[0].setEnabled(True)
+
+
 class FrameDefault(QtWidgets.QFrame, frame_default.Ui_Frame):
     def __init__(self, *args, obj=None, **kwargs):
         super(FrameDefault, self).__init__(*args, **kwargs)
         self.setupUi(self)
+
+
+class FrameFormulir(QtWidgets.QFrame, frame_formulir.Ui_Frame):
+    def __init__(self, *args, obj=None, **kwargs):
+        super(FrameFormulir, self).__init__(*args, **kwargs)
+        self.action = ''
+        self.cur_item = QtWidgets.QListWidgetItem()
+        self.setupUi(self)
+
+        # Initiating the prompt dialog.
+        self.d = DialogForms(self)
+
+        # Populating the forms list with existing forms.
+        self.init_prefilled_forms()
+
+        # Add slot connector.
+        self.d.accepted.connect(self.on_dialog_forms_accepted)
+        self.list_forms.currentItemChanged.connect(self.on_current_item_changed)
+
+    def init_prefilled_forms(self):
+        """
+        Populate the QListWidget with the forms list found in the GKI Salatiga+ JSON data.
+        :return: nothing.
+        """
+        # Iterating through every list of existing forms in the JSON schema.
+        for a in app_db.db['forms']:
+            # Adding the list item.
+            b = QtWidgets.QListWidgetItem()
+            b.setText(a['title'])
+            b.setToolTip(a['url'])
+            self.findChild(QtWidgets.QListWidget, 'list_forms').addItem(b)
+
+    @pyqtSlot()
+    def on_btn_add_clicked(self):
+        # Prompt for user input value.
+        self.call_action('new')
+
+    @pyqtSlot()
+    def on_btn_delete_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The title of the currently selected item.
+        title = self.cur_item.text()
+
+        # Warn the user about deletion.
+        r = (QtWidgets.QMessageBox.warning(
+            self, 'Penghapusan data formulir.',
+            f'Apakah Anda yakin akan menghapus formulir: {title}?\nTindakan ini tidak dapat dikembalikan!',
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+        ))
+
+        # Validating the response.
+        if r == QtWidgets.QMessageBox.Yes:
+            # Get the selected item's row position.
+            y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+            # Remove the selected item from the list.
+            self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+            # Logging.
+            Lg('main.FrameFormulir.on_btn_delete_clicked', f'Removed the form: {title} successfully!')
+        else:
+            Lg('main.FrameFormulir.on_btn_delete_clicked', f'Phew! It did not get removed.')
+
+    @pyqtSlot()
+    def on_btn_edit_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # The selected item's title and url.
+        title = self.cur_item.text()
+        url = self.cur_item.toolTip()
+
+        # Prompt for user input value.
+        self.call_action('edit', title, url)
+
+    @pyqtSlot()
+    def on_btn_move_down_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == widget_size - 1:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos + 1
+        self.findChild(QtWidgets.QListWidget, 'list_forms').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_move_up_clicked(self):
+        if self.cur_item is None:
+            return
+
+        # Clone the selected item.
+        a = self.cur_item.clone()
+
+        # Get the selected item's row position.
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(self.cur_item).row()
+
+        # Do not move up if already at the top.
+        if y_pos == 0:
+            return
+
+        # Remove the selected item from the list.
+        self.findChild(QtWidgets.QListWidget, 'list_forms').takeItem(y_pos)
+
+        # Move up the item.
+        target_pos = y_pos - 1
+        self.findChild(QtWidgets.QListWidget, 'list_forms').insertItem(target_pos, a)
+        self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentRow(target_pos)
+
+    @pyqtSlot()
+    def on_btn_save_clicked(self):
+        # Creating the JSON array to replace the old one.
+        a = []
+
+        # Iterating through every item.
+        for i in range(self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()):
+
+            # The list item.
+            b = self.findChild(QtWidgets.QListWidget, 'list_forms').item(i)
+
+            # The item title and URL.
+            title = b.text()
+            url = b.toolTip()
+
+            # Add this item to the JSON array.
+            a.append({
+                'title': title,
+                'url': url
+            })
+
+        # Overwrite the existing forms object.
+        app_db.db['forms'] = a
+
+        # Save to local file.
+        app_db.save_local('forms')
+
+        # Display the save successful notice.
+        QtWidgets.QMessageBox.information(
+            self, 'Data tersimpan!',
+            'Perubahan data berhasil disimpan. Silahkan unggah pembaruan supaya data dapat dilihat oleh jemaat.',
+            QtWidgets.QMessageBox.Ok
+        )
+
+    def on_current_item_changed(self):
+        # Save the state of the currently selected item.
+        self.cur_item = self.findChild(QtWidgets.QListWidget, 'list_forms').currentItem()
+
+        # The item widget's size.
+        widget_size = self.findChild(QtWidgets.QListWidget, 'list_forms').__len__()
+
+        # The selected item's index.
+        a = self.findChild(QtWidgets.QListWidget, 'list_forms').currentItem()
+        y_pos = self.findChild(QtWidgets.QListWidget, 'list_forms').indexFromItem(a).row()
+
+        if y_pos == 0:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(False)
+        elif y_pos == widget_size - 1:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(False)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+        else:
+            self.findChild(QtWidgets.QPushButton, 'btn_move_down').setEnabled(True)
+            self.findChild(QtWidgets.QPushButton, 'btn_move_up').setEnabled(True)
+
+    @pyqtSlot()
+    def on_dialog_forms_accepted(self):
+        # The input dialog's title and URL fields.
+        title = self.d.findChild(QtWidgets.QLineEdit, 'field_title').text().strip()
+        url = self.d.findChild(QtWidgets.QLineEdit, 'field_url').text().strip()
+
+        # Prevents empty form field.
+        if title == '' or url == '':
+            QtWidgets.QMessageBox.warning(
+                self, 'Data kosong!',
+                'Anda harus mengisi ',
+                QtWidgets.QMessageBox.Ok
+            )
+
+        if self.action == 'new':
+            Lg('main.FrameFormulir.on_dialog_forms_accepted', f'Creating a new form: {title} ...')
+
+            # Add a new item to the list.
+            a = QtWidgets.QListWidgetItem()
+            a.setText(title)
+            a.setToolTip(url)
+            self.findChild(QtWidgets.QListWidget, 'list_forms').addItem(a)
+
+            # Set the focus to the newly created item.
+            self.findChild(QtWidgets.QListWidget, 'list_forms').setCurrentItem(a)
+
+        elif self.action == 'edit':
+            Lg('main.FrameFormulir.on_dialog_forms_accepted', f'Editing an existing form: {title} ...')
+
+            # Edit the selected item's value.
+            self.cur_item.setText(title)
+            self.cur_item.setToolTip(url)
+
+        # Update the current selection and state.
+        self.on_current_item_changed()
+
+    def call_action(self, action, edit_title: str = '', edit_url: str = ''):
+        """
+        Determine what forms action to take, as well as displaying the dialog.
+        Possible values; 'new' and 'edit'.
+        :param action: between 'new' and 'edit', specifies the forms action to undergo.
+        :param edit_title: (optional) the current form's title to edit.
+        :param edit_url: (optional) the current form's url to edit.
+        :return: nothing.
+        """
+        self.action = action
+
+        # Change the dialog's title according to the passed value.
+        if action == 'new':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Tambahkan Formulir Baru')
+
+            # Clear the existing title and URL.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_title').setText('')
+            self.d.findChild(QtWidgets.QLineEdit, 'field_url').setText('')
+
+        elif action == 'edit':
+            self.d.findChild(QtWidgets.QLabel, 'app_title').setText('Edit Formulir')
+
+            # Prefill with existing values.
+            self.d.findChild(QtWidgets.QLineEdit, 'field_title').setText(edit_title)
+            self.d.findChild(QtWidgets.QLineEdit, 'field_url').setText(edit_url)
+
+        # Show the dialog.
+        self.d.show()
+
+        # Validate preliminary field values.
+        self.d.validate_fields()
 
 
 class FrameRenungan(QtWidgets.QFrame, frame_renungan.Ui_Frame):
@@ -590,7 +879,7 @@ class FrameRenungan(QtWidgets.QFrame, frame_renungan.Ui_Frame):
         app_db.db['ykb'][4]['url'] = self.findChild(QtWidgets.QLineEdit, 'field_lansia').text()
 
         # Save to local file.
-        app_db.save_local()
+        app_db.save_local('ykb')
 
         # Display the save successful notice.
         QtWidgets.QMessageBox.information(
@@ -623,7 +912,7 @@ class FrameSocialMedia(QtWidgets.QFrame, frame_social_media.Ui_Frame):
         app_db.db['url-profile']['youtube'] = self.findChild(QtWidgets.QLineEdit, 'field_yt').text()
 
         # Save to local file.
-        app_db.save_local()
+        app_db.save_local('url-profile')
 
         # Display the save successful notice.
         QtWidgets.QMessageBox.information(
@@ -640,32 +929,19 @@ class FrameTataIbadah(QtWidgets.QFrame, frame_liturgi_upload.Ui_Frame):
         self.pdf_loc = None
         self.setupUi(self)
 
-        # Trigger the rendering of initial value.
-        self.on_date_picker_date_time_changed()
-
         # Connect the slots.
-        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+        self.date_picker.selectionChanged.connect(self.on_date_picker_selection_changed)
 
     @pyqtSlot()
-    def on_date_picker_date_time_changed(self):
-        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
-        cur_date_int = []
-        for l in cur_date:
-            cur_date_int.append(int(l))
+    def on_date_picker_selection_changed(self):
+        cur_date = self.findChild(QtWidgets.QCalendarWidget, 'date_picker').selectedDate()
+        cur_date_int = [cur_date.day(), cur_date.month(), cur_date.year()]
 
         # Validate the current date string.
         cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
 
-        # Get day of the week string.
-        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
-        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
-
-        # Print the date snippet.
-        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
-        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
-
         # Store the properly formated and localized date, which will become the post title.
-        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} {cur_date_int[2]}'
 
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):
@@ -736,30 +1012,19 @@ class FrameWartaJemaat(QtWidgets.QFrame, frame_warta_upload.Ui_Frame):
         self.setupUi(self)
 
         # Trigger the rendering of initial value.
-        self.on_date_picker_date_time_changed()
-
-        self.date_picker.dateTimeChanged.connect(self.on_date_picker_date_time_changed)
+        self.on_date_picker_selection_changed()
+        self.date_picker.selectionChanged.connect(self.on_date_picker_selection_changed)
 
     @pyqtSlot()
-    def on_date_picker_date_time_changed(self):
-        cur_date = self.findChild(QtWidgets.QDateEdit, 'date_picker').text().split('/')
-        cur_date_int = []
-        for l in cur_date:
-            cur_date_int.append(int(l))
+    def on_date_picker_selection_changed(self):
+        cur_date = self.findChild(QtWidgets.QCalendarWidget, 'date_picker').selectedDate()
+        cur_date_int = [cur_date.day(), cur_date.month(), cur_date.year()]
 
         # Validate the current date string.
         cur_month_name = StringValidator.LOCALE_MONTH_NAME[cur_date_int[1] - 1]
 
-        # Get day of the week string.
-        int_day_of_week = StringValidator().get_day_of_week(cur_date_int[2], cur_date_int[1], cur_date_int[0])
-        cur_day_of_week = StringValidator.LOCALE_DAY_OF_WEEK[int_day_of_week]
-
-        # Print the date snippet.
-        str_date = f'{cur_day_of_week}, {cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
-        self.findChild(QtWidgets.QLabel, 'txt_date_format').setText(str_date)
-
         # Store the properly formated and localized date, which will become the post title.
-        self.localized_date = f'{cur_date_int[0]} {cur_month_name} 20{cur_date[2]}'
+        self.localized_date = f'{cur_date_int[0]} {cur_month_name} {cur_date_int[2]}'
 
     @pyqtSlot()
     def on_btn_pdf_select_clicked(self):

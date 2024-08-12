@@ -120,11 +120,6 @@ class AppDatabase(object):
             # DEBUG. Please comment out on production.
             # print(r.json())
 
-            # Preparing the JSON metadata.
-            self.db_meta['update-count'] += 1
-            self.db_meta['last-actor'] = 'SIMON_PETRUS'
-            self.db_meta['last-update'] = round(time.time())
-
             # Merging the "meta" and "data" of the JSON schema.
             j = {
                 'meta': self.db_meta,
@@ -172,12 +167,19 @@ class AppDatabase(object):
             Lg('lib.database.AppDatabase.push_json_schema', msg)
             return False, {}, msg
 
-    def save_local(self):
+    def save_local(self, updated_item: str = 'unspecified'):
         """
         Save the current state of the JSON schema into the local file.
+        :param updated_item: the latest updated JSON item.
         :return: nothing.
         """
         with open(self.prefs.JSON_DATA_SCHEMA, 'w') as fo:
+            # Preparing the JSON metadata.
+            self.db_meta['update-count'] += 1
+            self.db_meta['last-update'] = round(time.time())
+            self.db_meta['last-actor'] = 'SIMON_PETRUS'
+            self.db_meta['last-updated-item'] = updated_item
+
             # Prepare the dict to convert to JSON.
             a = {
                 'meta': self.db_meta,
@@ -185,5 +187,5 @@ class AppDatabase(object):
             }
 
             # Write/dump the JSON file.
-            json.dump(a, fo)
+            json.dump(a, fo, ensure_ascii=False, indent=4)
             Lg('lib.database.AppDatabase.save_local', f'Saved JSON schema successfully!')
