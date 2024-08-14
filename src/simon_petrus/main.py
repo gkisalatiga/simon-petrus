@@ -1269,7 +1269,7 @@ class FrameAgenda(QtWidgets.QFrame, frame_agenda.Ui_Frame):
                 self.DEFAULT_ITEM_ROLE,
                 (the_day_key, a['name'], a['time'], a['place'], a['representative'], item_order)
             )
-            b.setText(f'{a['time']} WIB --- {a['name']}')
+            b.setText(f'{a["time"]} WIB --- {a["name"]}')
             self.findChild(QtWidgets.QListWidget, 'list_agenda').addItem(b)
 
         # Sort the list alphanumerically. [13]
@@ -2470,7 +2470,7 @@ class FramePersembahan(QtWidgets.QFrame, frame_persembahan.Ui_Frame):
                 self.DEFAULT_ITEM_ROLE,
                 (a['bank-name'], a['bank-abbr'], a['bank-number'], a['account-holder'])
             )
-            b.setText(f'{a['bank-abbr']} {a['bank-number']}')
+            b.setText(f'{a["bank-abbr"]} {a["bank-number"]}')
             self.findChild(QtWidgets.QListWidget, 'list_banks').addItem(b)
 
     def init_qris(self):
