@@ -96,6 +96,9 @@ class Uploader(object):
     # API endpoint for retrieving playlist data in YouTube.
     YT_ENDPOINT_PLAYLIST_ITEMS = 'https://www.googleapis.com/youtube/v3/playlistItems'
 
+    # API endpoint for retrieving video data in YouTube.
+    YT_ENDPOINT_VIDEO_ITEMS = 'https://www.googleapis.com/youtube/v3/videos'
+
     # The "Kebaktian Umum" playlist ID of GKI Salatiga.
     YT_PLAYLIST_KEBAKTIAN_UMUM = 'PLtAv1OZRTdvI1P3YIJ4_qOqapZjV1PtnI'
 
@@ -246,6 +249,26 @@ class Uploader(object):
         # Fetching the data.
         with requests.Session() as s:
             r = s.get(self.YT_ENDPOINT_PLAYLIST_ITEMS + f'?key={key}&part={part}&playlistId={playlist_id}&maxResults={max_results}')
+
+        # Return the data.
+        return r.json()
+
+    def get_yt_video_data(self, video_id: str):
+        """
+        Retrieve the YouTube snippet data from a given YouTube ID.
+        :param video_id: the YouTube video's ID to retrieve the information of.
+        :return: generic YouTube v3 API JSON response.
+        """
+        # Prepare the YouTube API v3 API key.
+        key = self.app_db.credentials['api_youtube']
+
+        # Preparing the request queries.
+        part = 'snippet'
+
+        # Fetching the data.
+        with requests.Session() as s:
+            r = s.get(
+                self.YT_ENDPOINT_VIDEO_ITEMS + f'?key={key}&part={part}&id={video_id}')
 
         # Return the data.
         return r.json()

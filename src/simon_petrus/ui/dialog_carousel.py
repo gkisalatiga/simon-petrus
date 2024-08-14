@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/ssynthesia/ghostcity/git-collab/gkisalatiga/simon-petrus/qtdesigner-ui/dialog_forms.ui'
+# Form implementation generated from reading ui file '/ssynthesia/ghostcity/git-collab/gkisalatiga/simon-petrus/qtdesigner-ui/dialog_carousel.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -15,9 +15,9 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.setWindowModality(QtCore.Qt.WindowModal)
-        Dialog.resize(519, 222)
+        Dialog.resize(633, 534)
         self.button_box = QtWidgets.QDialogButtonBox(Dialog)
-        self.button_box.setGeometry(QtCore.QRect(10, 180, 501, 32))
+        self.button_box.setGeometry(QtCore.QRect(20, 490, 591, 32))
         self.button_box.setOrientation(QtCore.Qt.Horizontal)
         self.button_box.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.button_box.setObjectName("button_box")
@@ -31,7 +31,7 @@ class Ui_Dialog(object):
         self.app_title.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
         self.app_title.setObjectName("app_title")
         self.app_title_2 = QtWidgets.QLabel(Dialog)
-        self.app_title_2.setGeometry(QtCore.QRect(10, 30, 491, 21))
+        self.app_title_2.setGeometry(QtCore.QRect(10, 30, 601, 21))
         font = QtGui.QFont()
         font.setPointSize(9)
         font.setBold(False)
@@ -40,29 +40,25 @@ class Ui_Dialog(object):
         self.app_title_2.setFont(font)
         self.app_title_2.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
         self.app_title_2.setObjectName("app_title_2")
-        self.label = QtWidgets.QLabel(Dialog)
-        self.label.setGeometry(QtCore.QRect(20, 80, 91, 21))
+        self.label_11 = QtWidgets.QLabel(Dialog)
+        self.label_11.setGeometry(QtCore.QRect(20, 80, 151, 21))
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
-        self.label.setFont(font)
-        self.label.setObjectName("label")
-        self.label_2 = QtWidgets.QLabel(Dialog)
-        self.label_2.setGeometry(QtCore.QRect(20, 110, 91, 21))
-        font = QtGui.QFont()
-        font.setBold(True)
-        font.setWeight(75)
-        self.label_2.setFont(font)
-        self.label_2.setObjectName("label_2")
-        self.field_title = QtWidgets.QLineEdit(Dialog)
-        self.field_title.setGeometry(QtCore.QRect(122, 80, 381, 21))
-        self.field_title.setObjectName("field_title")
-        self.field_url = QtWidgets.QLineEdit(Dialog)
-        self.field_url.setGeometry(QtCore.QRect(122, 110, 381, 21))
-        self.field_url.setObjectName("field_url")
-        self.label_status = QtWidgets.QLabel(Dialog)
-        self.label_status.setGeometry(QtCore.QRect(120, 140, 381, 16))
-        self.label_status.setObjectName("label_status")
+        self.label_11.setFont(font)
+        self.label_11.setObjectName("label_11")
+        self.carousel_type = QtWidgets.QComboBox(Dialog)
+        self.carousel_type.setGeometry(QtCore.QRect(180, 80, 291, 24))
+        self.carousel_type.setObjectName("carousel_type")
+        self.carousel_type.addItem("")
+        self.carousel_type.addItem("")
+        self.carousel_type.addItem("")
+        self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(20, 110, 601, 371))
+        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
+        self.fragment_layout = QtWidgets.QGridLayout(self.gridLayoutWidget)
+        self.fragment_layout.setContentsMargins(0, 0, 0, 0)
+        self.fragment_layout.setObjectName("fragment_layout")
 
         self.retranslateUi(Dialog)
         self.button_box.accepted.connect(Dialog.accept) # type: ignore
@@ -71,11 +67,10 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Tambah/Edit Formulir"))
+        Dialog.setWindowTitle(_translate("Dialog", "Tambah/Edit Komedi Putar"))
         self.app_title.setText(_translate("Dialog", "[Placeholder Title]"))
-        self.app_title_2.setText(_translate("Dialog", "Masukkan URL formulir daring (misal, Google Forms) beserta judul formulir."))
-        self.label.setText(_translate("Dialog", "Judul Formulir"))
-        self.label_2.setText(_translate("Dialog", "URL"))
-        self.field_title.setPlaceholderText(_translate("Dialog", "Formulir pendaftaran kegiatan ABC ..."))
-        self.field_url.setPlaceholderText(_translate("Dialog", "https://docs.google.com/forms/..."))
-        self.label_status.setText(_translate("Dialog", "-"))
+        self.app_title_2.setText(_translate("Dialog", "Masukkan informasi terkait poster komedi putar yang akan dipublikasikan."))
+        self.label_11.setText(_translate("Dialog", "Jenis Komedi Putar"))
+        self.carousel_type.setItemText(0, _translate("Dialog", "Poster"))
+        self.carousel_type.setItemText(1, _translate("Dialog", "Video YouTube"))
+        self.carousel_type.setItemText(2, _translate("Dialog", "Artikel Web"))

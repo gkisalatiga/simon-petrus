@@ -91,7 +91,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Tambah/Edit Persembahan"))
         self.app_title.setText(_translate("Dialog", "[Placeholder Title]"))
         self.app_title_2.setText(_translate("Dialog", "Masukkan informasi terkait rekening bank yang akan ditampilkan kepada jemaat."))
         self.label_5.setText(_translate("Dialog", "Singkatan Bank"))

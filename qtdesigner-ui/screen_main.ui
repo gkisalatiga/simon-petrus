@@ -112,8 +112,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>98</width>
-       <height>28</height>
+       <width>100</width>
+       <height>30</height>
       </rect>
      </property>
      <attribute name="label">
@@ -162,7 +162,7 @@
         <item>
          <widget class="QLabel" name="label_2">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="font">
            <font>
@@ -177,9 +177,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="commandLinkButton_9">
+         <widget class="QCommandLinkButton" name="cmd_carousel">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Tampilkan Poster ...</string>
@@ -211,9 +211,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="commandLinkButton_7">
+         <widget class="QCommandLinkButton" name="cmd_agenda">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Agenda Sepekan</string>
@@ -388,7 +388,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.1.5</string>
+     <string>v0.1.6</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

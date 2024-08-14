@@ -1,11 +1,17 @@
 # Simon Petrus Changelog
 
-## v0.1.5 (10) --- 2024-08-13
+## v0.1.6 (10) --- 2024-08-14
+
+- New: Added carousel poster banner uploader and editor
+- New: Added the interface to update agenda data
+- Fix: Fixed carousel not preserving banner order
+
+## v0.1.5 (9) --- 2024-08-13
 
 - New: Added QRIS code image updater
 - New: Added offertories bank transfer destination updater
 
-## v0.1.4 (9) --- 2024-08-12
+## v0.1.4 (8) --- 2024-08-12
 
 - New: Added forms data editor
 
