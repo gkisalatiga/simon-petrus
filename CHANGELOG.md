@@ -4,6 +4,7 @@
 
 - New: Added carousel poster banner uploader and editor
 - New: Added the interface to update agenda data
+- Fix: Fixed carousel not preserving banner order
 
 ## v0.1.5 (9) --- 2024-08-13
 

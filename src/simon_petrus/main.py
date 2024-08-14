@@ -1565,8 +1565,24 @@ class FrameCarousel(QtWidgets.QFrame, frame_carousel.Ui_Frame):
 
     @pyqtSlot()
     def on_btn_save_clicked(self):
+        # Creating the JSON array to replace the old one.
+        a = {}
+
+        # Iterating through every item.
+        for i in range(self.findChild(QtWidgets.QListWidget, 'list_carousel').__len__()):
+            # The list item.
+            b = self.findChild(QtWidgets.QListWidget, 'list_carousel').item(i)
+            c = b.data(self.DEFAULT_ITEM_ROLE)
+
+            # The item key and dict data.
+            key = c[0]
+            data = c[1]
+
+            # Add this item to the JSON dict.
+            a[key] = data
+
         # Overwrite the existing forms object.
-        app_db.db['carousel'] = self.carousel_dict
+        app_db.db['carousel'] = a
 
         # Save to local file.
         app_db.save_local('carousel')
