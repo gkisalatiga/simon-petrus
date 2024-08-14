@@ -1,6 +1,6 @@
 # Simon Petrus Changelog
 
-## Next Release
+## v0.1.6 (10) --- 2024-08-14
 
 - New: Added carousel poster banner uploader and editor
 - New: Added the interface to update agenda data
