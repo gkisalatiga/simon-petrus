@@ -381,7 +381,7 @@ class Uploader(object):
             <p><iframe title="YouTube video player" src="{target_yt_embed}" width="560" height="315" frameborder="0" allowfullscreen="allowfullscreen"></iframe></p>
             <p><a id="link-liturgi" href="{latest_liturgi}"><img class="alignnone wp-image-4171" src="https://i0.wp.com/gkisalatiga.org/wp-content/uploads/2023/07/2-1.png?resize=218%2C66" alt="Tautan Liturgi" width="218" height="66" /></a></p>
             <p><a id="link-warta" href="{latest_warta}"><img class="alignnone wp-image-4170" src="https://i0.wp.com/gkisalatiga.org/wp-content/uploads/2023/07/WARTA-JEMAAT-1.png?resize=218%2C66" alt="Tautan Warta Jemaat" width="218" height="66" /></a></p>
-            <figure class="wp-block-image size-large"><img src="{poster_image_link}" alt="Poster Kebaktian Umum" width="1024" height="1024" /></figure>
+            <figure class="wp-block-image size-large"><img src="{poster_image_link}" alt="Poster Kebaktian Umum" width="100%" /></figure>
             '''.strip()
             msg = 'Updating the WordPress homepage. This will not be very long ...'
             self.anim.set_prog_msg(90, msg)
