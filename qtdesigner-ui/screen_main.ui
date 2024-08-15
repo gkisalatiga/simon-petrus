@@ -27,7 +27,7 @@
      <enum>QFrame::NoFrame</enum>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="page">
      <property name="geometry">
@@ -112,8 +112,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>100</width>
-       <height>30</height>
+       <width>231</width>
+       <height>501</height>
       </rect>
      </property>
      <attribute name="label">
@@ -153,8 +153,8 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
-         <width>193</width>
+         <y>-21</y>
+         <width>215</width>
          <height>520</height>
         </rect>
        </property>
@@ -248,9 +248,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="commandLinkButton_10">
+         <widget class="QCommandLinkButton" name="cmd_gallery">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Galeri</string>
@@ -388,7 +388,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.1.6</string>
+     <string>v0.1.7</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

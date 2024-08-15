@@ -10,14 +10,21 @@ REFERENCES:
     - https://docs.python.org/3/library/filecmp.html
     - https://stackoverflow.com/a/1072576
 """
-import shutil
+import time
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 from zipfile import ZipFile
 import base64
 import filecmp
+import json
 import os
-import urllib.request
-
 import requests
+import shutil
+import urllib.request
 
 from lib.database import AppDatabase
 from lib.logger import Logger as Lg
@@ -38,10 +45,29 @@ class AppAssets(object):
     QRIS_IMAGE_API = 'https://api.github.com/repos/gkisalatiga/gkisplus-data/contents/images/qris_gkis.png'
     QRIS_IMAGE_URL = 'https://raw.githubusercontent.com/gkisalatiga/gkisplus-data/main/images/qris_gkis.png'
 
+    # The URL, path (relative to repo's root), and API end point of the gallery JSON file.
+    GALLERY_JSON_PATH = 'gkisplus-gallery.json'
+    GALLERY_JSON_API = 'https://api.github.com/repos/gkisalatiga/gkisplus-data/contents/gkisplus-gallery.json'
+    GALLERY_JSON_URL = 'https://raw.githubusercontent.com/gkisalatiga/gkisplus-data/main/gkisplus-gallery.json'
+
     # The paths to primary assets section: carousel, static HTML, and custom images.
     ASSETS_PATH_CAROUSEL = 'carousel'
     ASSETS_PATH_IMAGES = 'images'
     ASSETS_PATH_STATIC = 'static'
+
+    # The Google Drive API scopes.
+    GOOGLE_DRIVE_SCOPES = [
+        'https://www.googleapis.com/auth/docs',
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/drive.appdata',
+        'https://www.googleapis.com/auth/drive.apps.readonly',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/drive.meet.readonly',
+        'https://www.googleapis.com/auth/drive.metadata',
+        'https://www.googleapis.com/auth/drive.metadata.readonly',
+        'https://www.googleapis.com/auth/drive.photos.readonly',
+        'https://www.googleapis.com/auth/drive.readonly',
+    ]
 
     def __init__(self, global_pref: SavedPreferences, global_db: AppDatabase):
         self.credentials = global_db.credentials
@@ -49,11 +75,17 @@ class AppAssets(object):
         self.db_meta = global_db.db_meta
         self.prefs = global_pref
         self.saved_carousel_loc = None
+        self.saved_gallery_loc = None
         self.saved_qris_loc = None
 
         # This determines whether to upload files.
         self.do_upload_carousel = False
+        self.do_upload_gallery = True  # --- better this way; no need to check the individual state one by one
         self.do_upload_main_qris = False
+
+        # The gallery JSON dict.
+        self.gallery = {}
+        self.gallery_meta = {}
 
         # Initialize the assets folder before everything else.
         self.init_assets_folder()
@@ -93,6 +125,12 @@ class AppAssets(object):
         # Init the carousel zip file location.
         self.saved_carousel_loc = self.ASSETS_PATH_CAROUSEL + os.sep + os.path.split(self.CAROUSEL_ZIP_URL)[1]
 
+        # Init the gallery JSON file location.
+        self.saved_gallery_loc = self.prefs.ASSETS_DIRECTORY + os.sep + self.GALLERY_JSON_PATH
+
+        # Init the gallery JSON file, if and only if it is already downloaded locally.
+        self.get_gallery(True)
+
         # Post-logging.
         Lg('lib.assets.AppAssets.init_assets_folder', f'Initialization done!')
 
@@ -123,6 +161,92 @@ class AppAssets(object):
 
         # Return the carousel zip local path.
         return saved_file_path
+
+    def get_gallery(self, supress_download: bool = False):
+        """
+        Download the GKI Salatiga+ main gallery JSON file from the GitHub repo.
+        :param supress_download: whether to only return the downloaded path without actually downloading any file.
+        :return: the local path to the downloaded gallery JSON file.
+        """
+        download_url = self.GALLERY_JSON_URL
+        saved_file_path = self.saved_gallery_loc
+
+        # Saving/downloading the JSON file.
+        if not supress_download:
+            urllib.request.urlretrieve(download_url, saved_file_path)
+            Lg('lib.assets.AppAssets.get_gallery', f'Successfully downloaded: {download_url}!')
+
+        # Ensures file exists.
+        if not os.path.isfile(saved_file_path):
+            return None
+
+        # Parse the JSON.
+        with open(saved_file_path, 'r') as fi:
+            j = json.load(fi)
+        self.gallery = j['gallery']
+        self.gallery_meta = j['meta']
+
+        # Return the carousel zip local path.
+        return saved_file_path
+
+    def get_gdrive_folder_list(self, folder_id: str = '', only_first_page: bool = True):
+        """
+        Enlist file contents of a give Google Drive folder's ID.
+        :param folder_id: the folder ID to search for files.
+        :param only_first_page: whether to enlist the first 100 files or all files in a GDrive folder.
+        :return: generic Google Drive API JSON response.
+        """
+        # Parsing the token as the API credential.
+        token_json_location = self.prefs.TEMP_DIRECTORY + os.sep + 'gdrive_token.json'
+
+        # The file token.json stores the user's access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if not os.path.exists(token_json_location):
+            with open(token_json_location, 'w') as fo:
+                json.dump(self.credentials.get('authorized_drive_oauth'), fo)
+        creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
+        # If the credential has expired, refresh it.
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            # Save the refreshed credentials for the next run
+            with open(token_json_location, 'w') as token:
+                token.write(creds.to_json())
+
+        # Attempt to upload the requested file to Google Drive.
+        # Error-catching is done at level of the method which called this function.
+        service = build('drive', 'v3', credentials=creds)
+
+        # Return data fields that we desire.
+        # SOURCE: https://developers.google.com/drive/api/reference/rest/v3/files
+        fields = 'nextPageToken, files(id, name, createdTime, mimeType)'
+
+        # The page token.
+        page_token = None
+
+        # Stores all items from all pages.
+        all_items = []
+
+        # Call the Drive v3 API to upload a file
+        # SOURCE: https://www.perplexity.ai/search/how-to-obtain-photo-thumbnail-pQkR8AzvRG6uEhqSP.ug3Q
+        # SOURCE: https://www.perplexity.ai/search/google-drive-thumbnaillink-exp-38WMfnivSXmCrgzU0QUgdA
+        while True:
+            results = service.files().list(
+                q=f"'{folder_id}' in parents",
+                fields=fields,
+                pageToken=page_token
+            ).execute()
+            items = results.get('files', [])
+
+            # Appending to all items.
+            all_items.extend(items)
+
+            # Go to next page.
+            page_token = results.get('nextPageToken', None)
+            if page_token is None or only_first_page:
+                break
+
+        return all_items
 
     def get_main_qris(self, supress_download: bool = False):
         """
@@ -163,6 +287,13 @@ class AppAssets(object):
                 anim_window.set_prog_msg(20, msg)
                 Lg('lib.assets.AppAssets.push_assets', msg)
                 self.push_carousel()
+
+            # Uploading the gallery images.
+            if self.do_upload_gallery:
+                msg = f'Uploading the gallery albums ...'
+                anim_window.set_prog_msg(25, msg)
+                Lg('lib.assets.AppAssets.push_assets', msg)
+                self.push_gallery()
 
             # Post-logging.
             msg = f'Data upload to the GitHub repo of GKI Salatiga+ successful!'
@@ -253,6 +384,53 @@ class AppAssets(object):
         msg = f'Pushing GKI Salatiga+ app carousel zip file to main repository branch successful!'
         Lg('lib.database.AppDatabase.push_carousel', msg)
 
+    def push_gallery(self):
+        """
+        Pushing the gallery JSON file.
+        :return: nothing.
+        """
+        # Retrieving the latest SHA in order to detect changes and checkpoints.
+        r = requests.get(self.GALLERY_JSON_API)
+        latest_sha = r.json()['sha']
+
+        # DEBUG. Please comment out on production.
+        # print(r.json())
+
+        # Read the image file.
+        with open(self.saved_gallery_loc, 'rb') as fi:
+            gallery_bytes = fi.read()
+
+        # Converting the file bytes into base64.
+        gallery_b64_data = base64.b64encode(gallery_bytes).decode('UTF-8')
+
+        # DEBUG. Please always comment out.
+        # print(self.credentials)
+
+        # Preparing the push request header and payload data.
+        headers = {
+            'Authorization': f'Bearer {self.credentials["api_github"]}',
+            'Content-Type': 'application/json'
+        }
+        data_payload = {
+            'message': 'Manual Gallery update from "Simon Petrus"',
+            'content': gallery_b64_data,
+            'branch': 'main',
+            'sha': latest_sha,
+            'path': self.GALLERY_JSON_PATH
+        }
+
+        # Sending the http request.
+        msg = f'Uploading the gallery JSON data payload ...'
+        Lg('lib.assets.AppAssets.push_gallery', msg)
+        r = requests.put(self.GALLERY_JSON_API, headers=headers, json=data_payload)
+
+        # DEBUG. Please comment out after use.
+        # print(r.json())
+
+        # Concluding logging.
+        msg = f'Pushing GKI Salatiga+ app gallery JSON file to main repository branch successful!'
+        Lg('lib.database.AppDatabase.push_gallery', msg)
+
     def push_qris(self):
         """
         Pushing the QRIS image.
@@ -324,6 +502,27 @@ class AppAssets(object):
         else:
             Lg('lib.assets.AppAssets.queue_main_qris_change', 'Nothing interesting down here.')
             self.do_upload_main_qris = False
+
+    def save_local_gallery(self):
+        """
+        Save the current state of the gallery JSON schema into the local file.
+        :return: nothing.
+        """
+        with open(self.saved_gallery_loc, 'w') as fo:
+            # Preparing the JSON metadata.
+            self.gallery_meta['update-count'] += 1
+            self.gallery_meta['last-update'] = round(time.time())
+            self.gallery_meta['last-actor'] = 'SIMON_PETRUS'
+
+            # Prepare the dict to convert to JSON.
+            a = {
+                'meta': self.gallery_meta,
+                'gallery': self.gallery
+            }
+
+            # Write/dump the JSON file.
+            json.dump(a, fo, ensure_ascii=False, indent=4)
+            Lg('lib.assets.AppAssets.save_local_gallery', f'Saved the gallery JSON file successfully!')
 
     def set_credentials(self, cred: dict):
         self.credentials = cred

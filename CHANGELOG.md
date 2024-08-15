@@ -1,5 +1,10 @@
 # Simon Petrus Changelog
 
+## v0.1.7 (11) --- 2024-08-15
+
+- New: Added the gallery interface for uploading photo albums
+- Fix: Fixed typos on the use of hypens
+
 ## v0.1.6 (10) --- 2024-08-14
 
 - New: Added carousel poster banner uploader and editor

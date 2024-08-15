@@ -49,6 +49,18 @@ class StringValidator(object):
         pass
 
     @staticmethod
+    def get_date():
+        """
+        Gets date in YYYY-MM-DD format.
+        :return: date string in YYYY-MM-DD format.
+        """
+        now = dt.now()
+        y = now.year
+        m = now.month
+        d = now.day
+        return f'{y}-{StringValidator.zero_pad(m, 2)}-{StringValidator.zero_pad(d, 2)}'
+
+    @staticmethod
     def get_day_of_week(year: int, month: int, day: int):
         """
         Returns date (consisting of year, month, and day) into the Indonesian
@@ -76,6 +88,11 @@ class StringValidator(object):
         return f'{c}, {b[2]} {d} {b[0]}'
 
     @staticmethod
+    def get_gdrive_full_url(gdrive_id: str):
+        """ Return the proper, shareable Google Drive link from a GDrive ID. """
+        return 'https://drive.google.com/drive/folders/' + gdrive_id
+
+    @staticmethod
     def get_youtube_id_from_link(yt_url: str):
         """
         Obtains the YouTube ID from a given link. [2]
@@ -85,3 +102,16 @@ class StringValidator(object):
         parsed_url = urlparse(yt_url)
         v = parse_qs(parsed_url.query)['v'][0]
         return v
+
+    @staticmethod
+    def zero_pad(num: int, digits: int):
+        """
+        Zero-pad any integer with leading zeros.
+        :param num: the number to pad with zero.
+        :param digits: the returned string's number of digits/characters (must be strictly greater than or equal to "num")
+        :return: a zero-padded string.
+        """
+        if len(str(num)) > digits:
+            return str(num)
+        else:
+            return ('0' * (digits - len(str(num)))) + str(num)
