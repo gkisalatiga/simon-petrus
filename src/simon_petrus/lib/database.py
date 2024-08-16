@@ -19,6 +19,7 @@ import os
 import requests
 import time
 
+from lib.exceptions import InvalidPushCredentialError
 from lib.logger import Logger as Lg
 from loading_animation import ScreenLoadingAnimation
 import global_schema
@@ -118,7 +119,7 @@ class AppDatabase(object):
             latest_sha = r.json()['sha']
 
             # DEBUG. Please comment out on production.
-            print(r.json())
+            # print(r.json())
 
             # Merging the "meta" and "data" of the JSON schema.
             j = {
@@ -153,13 +154,23 @@ class AppDatabase(object):
             r = requests.put(self.GITHUB_JSON_URL, headers=headers, json=data_payload)
 
             # DEBUG. Please comment out after use.
-            print(r.json())
+            # print(r.json())
+
+            # We need http return code 200 in order to detect that the change has been uploaded successfully.
+            if r.json()['status'] != '200':
+                raise InvalidPushCredentialError
 
             # Concluding logging.
             msg = f'Pushing GKI Salatiga+ app JSON data to main repository branch successful!'
             anim_window.set_prog_msg(100, msg)
             Lg('lib.database.AppDatabase.push_json_schema', msg)
             return True, r.json(), msg
+
+        except InvalidPushCredentialError as e:
+            msg = (f'API Key yang Anda berikan tidak dapat digunakan untuk melakukan Git-Push.'
+                   f' Sebaiknya ganti kredensial "*.json.enc" Anda: {e}')
+            Lg('lib.database.AppDatabase.push_json_schema', msg)
+            return False, {}, msg
 
         except Exception as e:
             msg = f'An unknown error has just happened: {e}'

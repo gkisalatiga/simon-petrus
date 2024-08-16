@@ -191,65 +191,54 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             global_schema.app_db.load_json_schema()
 
             # Refresh the Qt widget of the currently active fragment.
-            global cur_fragment
-            self.clear_fragment_and_display(cur_fragment)
+            self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_agenda_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_agenda'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_agenda'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_carousel_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_carousel'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_carousel'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_formulir_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_formulir'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_formulir'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_gallery_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_gallery'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_gallery'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_liturgi_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_tata_ibadah'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_tata_ibadah'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_persembahan_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_persembahan'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_persembahan'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_renungan_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_renungan'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_renungan'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_social_media_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_social_media'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_social_media'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_warta_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_warta_jemaat'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_warta_jemaat'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
     def on_cmd_wp_home_clicked(self):
-        global cur_fragment
-        cur_fragment = 'fragment_wp_home'
-        self.clear_fragment_and_display(cur_fragment)
+        global_schema.cur_fragment = 'fragment_wp_home'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
