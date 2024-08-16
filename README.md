@@ -15,16 +15,10 @@ cd simon-petrus
 
 2. Instal dependensi Python
 
-Untuk sistem operasi Windows:
+Untuk semua sistem operasi:
 
 ```
-python -m pip install -r requirements_windows.txt
-```
-
-Untuk sistem operasi Linux:
-
-```
-python -m pip install -r requirements_linux.txt
+python -m pip install -r requirements.txt
 ```
 
 3. Jalankan modul utama aplikasi
