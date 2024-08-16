@@ -1,5 +1,14 @@
 # Simon Petrus Changelog
 
+## v0.2.0 (12) --- 2024-08-17
+
+- Info: Switched dependency from "pyargon2" to "argon2-cffi"
+- Info: Switched dependency from "python-magic" to "filetype"
+- New: Introduced the `global_schema` file that handles all app-wide global variable assignments and storage
+- Improved: Splitted screen, frame, and dialog classes in `main.py` to individual class files under `handler` folder
+- Fix: Fixed module dependency so that the source is pyinstaller-compilable on Windows without Visual C++ 14.0 requirement
+- Fix: Fixed API key error not detected when attempting to git-push the change
+
 ## v0.1.7 (11) --- 2024-08-15
 
 - New: Added the gallery interface for uploading photo albums

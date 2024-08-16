@@ -15,8 +15,6 @@ import time
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
 from zipfile import ZipFile
 import base64
 import filecmp
@@ -26,10 +24,9 @@ import requests
 import shutil
 import urllib.request
 
-from lib.database import AppDatabase
 from lib.logger import Logger as Lg
-from lib.preferences import SavedPreferences
 from loading_animation import ScreenLoadingAnimation
+import global_schema
 
 
 class AppAssets(object):
@@ -69,11 +66,11 @@ class AppAssets(object):
         'https://www.googleapis.com/auth/drive.readonly',
     ]
 
-    def __init__(self, global_pref: SavedPreferences, global_db: AppDatabase):
-        self.credentials = global_db.credentials
-        self.db = global_db.db
-        self.db_meta = global_db.db_meta
-        self.prefs = global_pref
+    def __init__(self):
+        self.credentials = global_schema.app_db.credentials
+        self.db = global_schema.app_db.db
+        self.db_meta = global_schema.app_db.db_meta
+        self.prefs = global_schema.prefs
         self.saved_carousel_loc = None
         self.saved_gallery_loc = None
         self.saved_qris_loc = None

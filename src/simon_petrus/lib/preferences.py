@@ -43,6 +43,9 @@ class SavedPreferences(object):
     # The GKI Salatiga+ downloaded (or fallback) JSON schema.
     JSON_DATA_SCHEMA = CONF_DIRECTORY + os.sep + 'data_schema.json'
 
+    # The temporarily stored Google OAUTH2.0 token.
+    JSON_GOOGLE_OAUTH_TOKEN = TEMP_DIRECTORY + os.sep + 'temp_oauth_token_refresh.json'
+
     # The default settings/config template JSON structure.
     JSON_SETTINGS_TEMPLATE = {
         'autosync_on_launch': 1,
@@ -162,7 +165,7 @@ class SavedPreferences(object):
         such as removing the temporary directory.
         :return: nothing.
         """
-        # Removing the temporary directory in order to conserve space.
+        # Removing the temporary directory in order to conserve space and maximize security.
         if os.path.isdir(self.TEMP_DIRECTORY):
             Lg('lib.preferences.SavedPreferences.shutdown', f'Removing the temporary directory ...')
             shutil.rmtree(self.TEMP_DIRECTORY)

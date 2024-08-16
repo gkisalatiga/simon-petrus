@@ -12,12 +12,13 @@ REFERENCES:
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
+from argon2 import Type
+from argon2 import hash_password_raw
+from argon2.exceptions import VerifyMismatchError
 import hashlib
 import json
-import os
-import pyargon2
-import time
 
+import global_schema
 from lib.logger import Logger as Lg
 from loading_animation import ScreenLoadingAnimation
 
@@ -28,8 +29,8 @@ class CredentialGenerator(object):
     GEN_PASSWORD_PEPPER = 'V]=tDk$3<=_qA2TR'
     GEN_PASSWORD_SALT = hashlib.sha512(get_random_bytes(32))
 
-    def __init__(self, anim_window: ScreenLoadingAnimation = None):
-        self.anim = anim_window
+    def __init__(self):
+        self.anim = global_schema.anim
         pass
 
     def encrypt(self, json_data_to_encrypt: dict, unlock_key: str):
@@ -42,7 +43,7 @@ class CredentialGenerator(object):
 
         # Convert the user's input password into a 16-bytes Argon2 hash.
         msg = 'Converting password into 16-bytes Argon2id hash ...'
-        self.anim.set_prog_msg(10, msg)
+        self.anim.set_prog_msg(40, msg)
         Lg('lib.credentials.CredentialGenerator.encrypt', msg)
         key = self.generate_hash(unlock_key, self.GEN_PASSWORD_SALT.hexdigest())
 
@@ -73,16 +74,14 @@ class CredentialGenerator(object):
         :param salt: if exists, the salting of the encrypted JSON data (in UTF-8 string format).
         :return: an Argon2id hash in raw bytes.
         """
-        return pyargon2.hash(
-            encrypt_decrypt_key,
-            salt=salt,
-            pepper=self.GEN_PASSWORD_PEPPER,
-            variant='id',
-            memory_cost=2 ** 12,
-            time_cost=1000,
-            parallelism=10,
+        return hash_password_raw(
+            password=(encrypt_decrypt_key + self.GEN_PASSWORD_PEPPER).encode('utf-8'),
+            salt=salt.encode('utf-8'),
+            time_cost=30,
+            memory_cost=65536,
+            parallelism=16,
             hash_len=16,
-            encoding='raw',
+            type=Type.ID
         )
 
 
@@ -90,12 +89,12 @@ class CredentialValidator(object):
 
     VALIDATOR_PASSWORD_PEPPER = CredentialGenerator.GEN_PASSWORD_PEPPER
 
-    def __init__(self, anim_window: ScreenLoadingAnimation = None, cred_loc: str = ''):
+    def __init__(self, cred_loc: str = ''):
         """
         Initializes the validator.
         :param cred_loc: the encrypted JSON file to validate and decrypt.
         """
-        self.anim_window = anim_window
+        self.anim_window = global_schema.anim
 
         # Pass the variable to all of this class' method.
         self.cred_loc = cred_loc
@@ -145,7 +144,7 @@ class CredentialValidator(object):
             self.anim_window.set_prog_msg(75, msg)
             Lg('lib.credentials.CredentialValidator.decrypt', msg)
             decrypt_cipher = AES.new(argon2id_hash, AES.MODE_OFB, iv=iv)
-            plain_text = decrypt_cipher.decrypt(cipher_text).decode('UTF-8')
+            plain_text = decrypt_cipher.decrypt(cipher_text).decode('utf-8')
 
             # DEBUG. Please always comment out on production.
             # print(plain_text)
@@ -167,6 +166,11 @@ class CredentialValidator(object):
             return True, parsed_dict, msg
 
         except UnicodeDecodeError as e:
+            msg = f'The password you are specifying is invalid: {e}'
+            Lg('lib.credentials.CredentialValidator.decrypt', msg)
+            return False, {}, msg
+
+        except VerifyMismatchError as e:
             msg = f'The password you are specifying is invalid: {e}'
             Lg('lib.credentials.CredentialValidator.decrypt', msg)
             return False, {}, msg
