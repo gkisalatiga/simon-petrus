@@ -18,6 +18,7 @@ from argon2.exceptions import VerifyMismatchError
 import hashlib
 import json
 
+import global_schema
 from lib.logger import Logger as Lg
 from loading_animation import ScreenLoadingAnimation
 
@@ -28,8 +29,8 @@ class CredentialGenerator(object):
     GEN_PASSWORD_PEPPER = 'V]=tDk$3<=_qA2TR'
     GEN_PASSWORD_SALT = hashlib.sha512(get_random_bytes(32))
 
-    def __init__(self, anim_window: ScreenLoadingAnimation = None):
-        self.anim = anim_window
+    def __init__(self):
+        self.anim = global_schema.anim
         pass
 
     def encrypt(self, json_data_to_encrypt: dict, unlock_key: str):
@@ -88,12 +89,12 @@ class CredentialValidator(object):
 
     VALIDATOR_PASSWORD_PEPPER = CredentialGenerator.GEN_PASSWORD_PEPPER
 
-    def __init__(self, anim_window: ScreenLoadingAnimation = None, cred_loc: str = ''):
+    def __init__(self, cred_loc: str = ''):
         """
         Initializes the validator.
         :param cred_loc: the encrypted JSON file to validate and decrypt.
         """
-        self.anim_window = anim_window
+        self.anim_window = global_schema.anim
 
         # Pass the variable to all of this class' method.
         self.cred_loc = cred_loc

@@ -41,9 +41,9 @@ import requests
 import traceback
 import urllib.request
 
+import global_schema
 from lib.database import AppDatabase
 from lib.exceptions import InvalidMimeTypeException, UploadFileSizeTooBig, MalformedHttpResponseJSON
-from lib.logger import Dumper as Dmp
 from lib.logger import Logger as Lg
 from lib.mimetypes import MimeTypes
 from lib.preferences import SavedPreferences
@@ -102,14 +102,10 @@ class Uploader(object):
     # The "Kebaktian Umum" playlist ID of GKI Salatiga.
     YT_PLAYLIST_KEBAKTIAN_UMUM = 'PLtAv1OZRTdvI1P3YIJ4_qOqapZjV1PtnI'
 
-    def __init__(
-            self, anim_window: ScreenLoadingAnimation = None,
-            global_pref: SavedPreferences = None,
-            global_db: AppDatabase = None
-    ):
-        self.anim = anim_window
-        self.prefs = global_pref
-        self.app_db = global_db
+    def __init__(self):
+        self.anim = global_schema.anim
+        self.prefs = global_schema.prefs
+        self.app_db = global_schema.app_db
 
     def edit_wp_post(self, post_id: int, new_content: str):
         """

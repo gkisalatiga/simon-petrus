@@ -20,8 +20,8 @@ import requests
 import time
 
 from lib.logger import Logger as Lg
-from lib.preferences import SavedPreferences
 from loading_animation import ScreenLoadingAnimation
+import global_schema
 
 
 class AppDatabase(object):
@@ -29,13 +29,13 @@ class AppDatabase(object):
     GITHUB_JSON_FILENAME = 'gkisplus.json'
     GITHUB_JSON_URL = 'https://api.github.com/repos/gkisalatiga/gkisplus-data/contents/gkisplus.json'
 
-    def __init__(self, global_pref: SavedPreferences):
+    def __init__(self):
         self.credentials = {}
         self.db = {}
         self.db_meta = {}
         self.is_db_exist = False
         self.is_db_valid = False
-        self.prefs = global_pref
+        self.prefs = global_schema.prefs
 
     def load_json_schema(self):
         """
@@ -118,7 +118,7 @@ class AppDatabase(object):
             latest_sha = r.json()['sha']
 
             # DEBUG. Please comment out on production.
-            # print(r.json())
+            print(r.json())
 
             # Merging the "meta" and "data" of the JSON schema.
             j = {
@@ -150,11 +150,10 @@ class AppDatabase(object):
             msg = f'Uploading the JSON data payload ...'
             anim_window.set_prog_msg(80, msg)
             Lg('lib.database.AppDatabase.push_json_schema', msg)
-            # r = requests.put(self.GITHUB_JSON_URL, headers=headers, data=data_payload)
             r = requests.put(self.GITHUB_JSON_URL, headers=headers, json=data_payload)
 
             # DEBUG. Please comment out after use.
-            # print(r.json())
+            print(r.json())
 
             # Concluding logging.
             msg = f'Pushing GKI Salatiga+ app JSON data to main repository branch successful!'

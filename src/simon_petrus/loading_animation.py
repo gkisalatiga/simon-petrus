@@ -13,12 +13,10 @@ REFERENCES:
     [3] Prevent window resizing in PyQt5
     - https://stackoverflow.com/a/13775478
 """
-import base64
-
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets
 import time
 
-from PyQt5.QtCore import pyqtSignal, QBuffer, QByteArray
+from PyQt5.QtCore import pyqtSignal
 
 from lib.external.meipass import resource_path
 from ui import screen_loading_animation
@@ -42,7 +40,6 @@ class ScreenLoadingAnimation(QtWidgets.QMainWindow, screen_loading_animation.Ui_
         gif = QtGui.QMovie(resource_path('assets/loading_animation.gif'))
         self.label_gif.setMovie(gif)
         gif.start()
-
 
     def reset_prog_msg(self):
         """
