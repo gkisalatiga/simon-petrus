@@ -33,7 +33,6 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from instascrap import InstaScraper
-from magic import Magic as Mgc
 from urllib.parse import urlparse, parse_qs
 import fitz
 import json
@@ -46,6 +45,7 @@ from lib.database import AppDatabase
 from lib.exceptions import InvalidMimeTypeException, UploadFileSizeTooBig, MalformedHttpResponseJSON
 from lib.logger import Dumper as Dmp
 from lib.logger import Logger as Lg
+from lib.mimetypes import MimeTypes
 from lib.preferences import SavedPreferences
 from loading_animation import ScreenLoadingAnimation
 
@@ -299,7 +299,7 @@ class Uploader(object):
             Lg('lib.uploader.Uploader.update_wp_homepage', msg)
             if not autodetect_last_ig:
                 # Finding the selected file's mime type. [2]
-                file_mimetype = Mgc(mime=True).from_file(custom_ig_img_path)
+                file_mimetype = MimeTypes.guess_mimetype(custom_ig_img_path)
 
                 if not file_mimetype.startswith('image/'):
                     raise InvalidMimeTypeException
@@ -483,7 +483,7 @@ class Uploader(object):
         """
         try:
             # Finding the selected file's mime type. [2]
-            file_mimetype = Mgc(mime=True).from_file(pdf_path)
+            file_mimetype = MimeTypes.guess_mimetype(pdf_path)
 
             if file_mimetype != 'application/pdf':
                 raise InvalidMimeTypeException
@@ -563,7 +563,7 @@ class Uploader(object):
         """
         try:
             # Finding the selected file's mime type. [2]
-            file_mimetype = Mgc(mime=True).from_file(pdf_path)
+            file_mimetype = MimeTypes.guess_mimetype(pdf_path)
 
             if file_mimetype != 'application/pdf':
                 raise InvalidMimeTypeException

@@ -46,7 +46,6 @@ from PyQt5.QtCore import pyqtSlot, QPoint, pyqtSignal, QTime
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMessageBox
 from datetime import datetime as dt
-from magic import Magic as Mgc
 from urllib import request
 from urllib.parse import urlparse
 import base64
@@ -64,6 +63,7 @@ from lib.credentials import CredentialValidator
 from lib.database import AppDatabase
 from lib.external.thread import ThreadWithResult
 from lib.logger import Logger as Lg
+from lib.mimetypes import MimeTypes
 from lib.preferences import SavedPreferences
 from lib.string_validator import StringValidator
 from lib.uploader import Uploader
@@ -1955,7 +1955,7 @@ class FrameCarouselArticle(QtWidgets.QFrame, frame_carousel_article.Ui_FrameArti
         # Validating the mimetype.
         # Finding the selected file's mime type. [14]
         if img_loc != '':
-            file_mimetype = Mgc(mime=True).from_file(img_loc)
+            file_mimetype = MimeTypes.guess_mimetype(img_loc)
             if not file_mimetype.startswith('image/'):
                 self.img_mime_valid = False
             else:
@@ -2074,7 +2074,7 @@ class FrameCarouselPoster(QtWidgets.QFrame, frame_carousel_poster.Ui_FramePoster
         # Validating the mimetype.
         # Finding the selected file's mime type. [14]
         if img_loc != '':
-            file_mimetype = Mgc(mime=True).from_file(img_loc)
+            file_mimetype = MimeTypes.guess_mimetype(img_loc)
             if not file_mimetype.startswith('image/'):
                 self.img_mime_valid = False
             else:
@@ -2083,7 +2083,7 @@ class FrameCarouselPoster(QtWidgets.QFrame, frame_carousel_poster.Ui_FramePoster
         # Validating the mimetype.
         # Finding the selected file's mime type. [14]
         if poster_loc != '':
-            file_mimetype = Mgc(mime=True).from_file(poster_loc)
+            file_mimetype = MimeTypes.guess_mimetype(poster_loc)
             if not file_mimetype.startswith('image/'):
                 self.poster_mime_valid = False
             else:
