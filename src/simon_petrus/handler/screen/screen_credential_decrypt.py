@@ -26,6 +26,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         # Prevent resizing. [10]
         self.setFixedSize(self.size())
 
+        # Associate pressing enter with decryption.
+        self.field_cred.returnPressed.connect(self.on_field_cred_enter_pressed)
+
         # The temporary value of the selected credential location.
         self.cred_loc = ''
 
@@ -160,3 +163,7 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
             self.field_cred.setEchoMode(QtWidgets.QLineEdit.Normal)
         else:
             self.field_cred.setEchoMode(QtWidgets.QLineEdit.Password)
+
+    @pyqtSlot()
+    def on_field_cred_enter_pressed(self):
+        self.on_btn_decrypt_clicked()
