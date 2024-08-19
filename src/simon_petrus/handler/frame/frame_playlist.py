@@ -335,6 +335,11 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
         # Overwrite the existing forms object.
         global_schema.app_db.db['yt'] = copy.deepcopy(self.playlist_dict)
 
+        # DEBUG.
+        # print(self.playlist_dict)
+        # print('=' * 25)
+        # print(global_schema.app_db.db['yt'])
+
         # Save to local file.
         global_schema.app_db.save_local('yt')
 
