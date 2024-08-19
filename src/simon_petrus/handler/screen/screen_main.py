@@ -16,6 +16,7 @@ from handler.frame.frame_default import FrameDefault
 from handler.frame.frame_formulir import FrameFormulir
 from handler.frame.frame_gallery import FrameGallery
 from handler.frame.frame_persembahan import FramePersembahan
+from handler.frame.frame_playlist import FramePlaylist
 from handler.frame.frame_renungan import FrameRenungan
 from handler.frame.frame_social_media import FrameSocialMedia
 from handler.frame.frame_tata_ibadah import FrameTataIbadah
@@ -69,6 +70,7 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             'fragment_formulir': FrameFormulir(),
             'fragment_gallery': FrameGallery(),
             'fragment_persembahan': FramePersembahan(),
+            'fragment_playlist': FramePlaylist(),
             'fragment_renungan': FrameRenungan(),
             'fragment_social_media': FrameSocialMedia(),
             'fragment_tata_ibadah': FrameTataIbadah(),
@@ -221,6 +223,11 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
     @pyqtSlot()
     def on_cmd_persembahan_clicked(self):
         global_schema.cur_fragment = 'fragment_persembahan'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
+
+    @pyqtSlot()
+    def on_cmd_playlist_clicked(self):
+        global_schema.cur_fragment = 'fragment_playlist'
         self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()
