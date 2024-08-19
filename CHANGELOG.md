@@ -1,5 +1,15 @@
 # Simon Petrus Changelog
 
+## v0.3.0 (13) --- 2024-08-20
+
+- New: Added the dashboard menu to add and manage YouTube playlists of GKI Salatiga+
+- New: Added the flag to fetch more than 100 Google Drive photos in GKI Salatiga+ gallery menu
+- New: Added license and changelog info dialog
+- Improved: You can now decrypt credentials by pressing the "enter/return" key
+- Fix: Uploading the JSON data does not commit the latest update on first launch
+- Fix: Fixed Google Drive OAUTH2.0 token expires after 50 API calls
+- Fix: Fixed loading animation screen does not close during sync and fetch due to lost internet
+
 ## v0.2.0 (12) --- 2024-08-17
 
 - Info: Switched dependency from "pyargon2" to "argon2-cffi"

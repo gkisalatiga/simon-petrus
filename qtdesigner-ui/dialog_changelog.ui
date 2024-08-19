@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>650</width>
+    <height>531</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Simon Petrus Changelog</string>
+  </property>
+  <widget class="QLabel" name="app_title">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>391</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>CHANGELOG</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="app_title_2">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>40</y>
+     <width>391</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Simon Petrus v0.3.0 build 13 - August 2024</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+   </property>
+  </widget>
+  <widget class="QScrollArea" name="scrollArea">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>70</y>
+     <width>631</width>
+     <height>411</height>
+    </rect>
+   </property>
+   <property name="widgetResizable">
+    <bool>true</bool>
+   </property>
+   <widget class="QWidget" name="scrollAreaWidgetContents">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>615</width>
+      <height>1125</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="app_caption">
+       <property name="font">
+        <font>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string># Simon Petrus Changelog
+
+## v0.3.0 (13) --- 2024-08-20
+
+- New: Added the dashboard menu to add and manage YouTube playlists of GKI Salatiga+
+- New: Added the flag to fetch more than 100 Google Drive photos in GKI Salatiga+ gallery menu
+- New: Added license and changelog info dialog
+- Improved: You can now decrypt credentials by pressing the &quot;enter/return&quot; key
+- Fix: Uploading the JSON data does not commit the latest update on first launch
+- Fix: Fixed Google Drive OAUTH2.0 token expires after 50 API calls
+- Fix: Fixed loading animation screen does not close during sync and fetch due to lost internet
+
+## v0.2.0 (12) --- 2024-08-17
+
+- Info: Switched dependency from &quot;pyargon2&quot; to &quot;argon2-cffi&quot;
+- Info: Switched dependency from &quot;python-magic&quot; to &quot;filetype&quot;
+- New: Introduced the `global_schema` file that handles all app-wide global variable assignments and storage
+- Improved: Splitted screen, frame, and dialog classes in `main.py` to individual class files under `handler` folder
+- Fix: Fixed module dependency so that the source is pyinstaller-compilable on Windows without Visual C++ 14.0 requirement
+- Fix: Fixed API key error not detected when attempting to git-push the change
+
+## v0.1.7 (11) --- 2024-08-15
+
+- New: Added the gallery interface for uploading photo albums
+- Fix: Fixed typos on the use of hypens
+
+## v0.1.6 (10) --- 2024-08-14
+
+- New: Added carousel poster banner uploader and editor
+- New: Added the interface to update agenda data
+- Fix: Fixed carousel not preserving banner order
+
+## v0.1.5 (9) --- 2024-08-13
+
+- New: Added QRIS code image updater
+- New: Added offertories bank transfer destination updater
+
+## v0.1.4 (8) --- 2024-08-12
+
+- New: Added forms data editor
+
+## v0.1.3 (7) --- 2024-08-11
+
+- Improved: Now using CalendarWidget instead of date line input when uploading Warta and Liturgi
+
+## v0.1.2 (6) --- 2024-08-11
+
+- New: Added configuration and common settings window
+- New: Composed the GitHub pusher for GKI Salatiga+ JSON schema
+- Fix: (Minor) Disabled window/screen resizing
+
+## v0.1.1 (5) --- 2024-08-10
+
+- Info: Changed PDF thumbnail generator dependency from &quot;pdf2image&quot; to &quot;fitz&quot; (PyMuPDF) to allow PDF rasterization without external binary install
+
+## v0.1.0 (4) --- 2024-08-10
+
+- Info: This is the first compilation attempt of the app into executable binaries
+- New: Added the WordPress homepage updater of GKISalatiga.org
+- Fix: Fixed segmentation fault when updating the loading progress bar
+
+## v0.0.3 (3) --- 2024-08-09
+
+- New: Added loading window during uploads and most other operations
+- Improved: The Qt main window no longer freezes during operations
+
+## v0.0.2 (2) --- 2024-08-09
+
+- New: Added &quot;Warta Jemaat&quot; and &quot;Tata Ibadah&quot; automatic uploader
+
+## v0.0.1 (1) --- 2024-08-07
+
+- New: Added the app's credential generator
+- New: Added the backend to save preferences and JSON schema
+- New: Created the mechanism to read the encrypted credential
+- New: Created screens: Renungan YKB and Social Media
+</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="btn_close">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>490</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>CLOSE</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

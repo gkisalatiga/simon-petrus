@@ -12,6 +12,7 @@ REFERENCES:
 """
 import time
 
+from google.auth.exceptions import TransportError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -23,6 +24,8 @@ import os
 import requests
 import shutil
 import urllib.request
+
+from httplib2 import ServerNotFoundError
 
 from lib.logger import Logger as Lg
 from loading_animation import ScreenLoadingAnimation
@@ -193,57 +196,69 @@ class AppAssets(object):
         :param only_first_page: whether to enlist the first 100 files or all files in a GDrive folder.
         :return: generic Google Drive API JSON response.
         """
-        # Parsing the token as the API credential.
-        token_json_location = self.prefs.TEMP_DIRECTORY + os.sep + 'gdrive_token.json'
+        try:
+            # Parsing the token as the API credential.
+            token_json_location = global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN
+            creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
 
-        # The file token.json stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if not os.path.exists(token_json_location):
-            with open(token_json_location, 'w') as fo:
-                json.dump(self.credentials.get('authorized_drive_oauth'), fo)
-        creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
-        # If the credential has expired, refresh it.
-        if creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            # Save the refreshed credentials for the next run
-            with open(token_json_location, 'w') as token:
-                token.write(creds.to_json())
+            # If the credential has expired, refresh it.
+            if creds.expired and creds.refresh_token:
+                Lg('AppAssets.get_gdrive_folder_list',
+                   'The Google Drive OAUTH2.0 credential is expired. Refreshing now ...')
+                creds.refresh(Request())
+                # Save the refreshed credentials for the next run
+                with open(token_json_location, 'w') as token:
+                    token.write(creds.to_json())
 
-        # Attempt to upload the requested file to Google Drive.
-        # Error-catching is done at level of the method which called this function.
-        service = build('drive', 'v3', credentials=creds)
+            # Attempt to upload the requested file to Google Drive.
+            # Error-catching is done at level of the method which called this function.
+            service = build('drive', 'v3', credentials=creds)
 
-        # Return data fields that we desire.
-        # SOURCE: https://developers.google.com/drive/api/reference/rest/v3/files
-        fields = 'nextPageToken, files(id, name, createdTime, mimeType)'
+            # Return data fields that we desire.
+            # SOURCE: https://developers.google.com/drive/api/reference/rest/v3/files
+            fields = 'nextPageToken, files(id, name, createdTime, mimeType)'
 
-        # The page token.
-        page_token = None
+            # The page token.
+            page_token = None
 
-        # Stores all items from all pages.
-        all_items = []
+            # Stores all items from all pages.
+            all_items = []
 
-        # Call the Drive v3 API to upload a file
-        # SOURCE: https://www.perplexity.ai/search/how-to-obtain-photo-thumbnail-pQkR8AzvRG6uEhqSP.ug3Q
-        # SOURCE: https://www.perplexity.ai/search/google-drive-thumbnaillink-exp-38WMfnivSXmCrgzU0QUgdA
-        while True:
-            results = service.files().list(
-                q=f"'{folder_id}' in parents",
-                fields=fields,
-                pageToken=page_token
-            ).execute()
-            items = results.get('files', [])
+            # Call the Drive v3 API to upload a file
+            # SOURCE: https://www.perplexity.ai/search/how-to-obtain-photo-thumbnail-pQkR8AzvRG6uEhqSP.ug3Q
+            # SOURCE: https://www.perplexity.ai/search/google-drive-thumbnaillink-exp-38WMfnivSXmCrgzU0QUgdA
+            while True:
+                results = service.files().list(
+                    q=f"'{folder_id}' in parents",
+                    fields=fields,
+                    pageToken=page_token
+                ).execute()
+                items = results.get('files', [])
 
-            # Appending to all items.
-            all_items.extend(items)
+                # Appending to all items.
+                all_items.extend(items)
 
-            # Go to next page.
-            page_token = results.get('nextPageToken', None)
-            if page_token is None or only_first_page:
-                break
+                # Go to next page.
+                page_token = results.get('nextPageToken', None)
+                if page_token is None or only_first_page:
+                    break
 
-        return all_items
+            return all_items, True, 'Google Drive folder content sync successful!'
+
+        except ServerNotFoundError as e:
+            msg = f'Error detected. Looks like your internet is down: {e}'
+            Lg('AppAssets.get_gdrive_folder_list', msg)
+            return [], False, msg
+
+        except TransportError as e:
+            msg = f'Cannot resolve authenticator domain: {e}'
+            Lg('AppAssets.get_gdrive_folder_list', msg)
+            return [], False, msg
+
+        except Exception as e:
+            msg = f'Unknown error detected: {e}'
+            Lg('AppAssets.get_gdrive_folder_list', msg)
+            return [], False, msg
 
     def get_main_qris(self, supress_download: bool = False):
         """

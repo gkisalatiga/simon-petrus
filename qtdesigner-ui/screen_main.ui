@@ -394,7 +394,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.1.7</string>
+     <string>v0.3.0</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -470,18 +470,6 @@
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuBerkas">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="title">
-     <string>Info</string>
-    </property>
-    <addaction name="actionTentang"/>
-    <addaction name="actionBantuan"/>
-    <addaction name="actionLisensi"/>
-    <addaction name="actionLog_Pembaruan"/>
-   </widget>
    <widget class="QMenu" name="menuAkun">
     <property name="title">
      <string>Aplikasi</string>
@@ -489,8 +477,15 @@
     <addaction name="action_settings"/>
     <addaction name="action_exit"/>
    </widget>
+   <widget class="QMenu" name="menuTentang">
+    <property name="title">
+     <string>Tentang</string>
+    </property>
+    <addaction name="action_license"/>
+    <addaction name="action_changelog"/>
+   </widget>
    <addaction name="menuAkun"/>
-   <addaction name="menuBerkas"/>
+   <addaction name="menuTentang"/>
   </widget>
   <action name="actionTentang">
    <property name="enabled">
@@ -533,6 +528,16 @@
   <action name="actionGenerate_Secure_Credential">
    <property name="text">
     <string>Generate Secure Credential ...</string>
+   </property>
+  </action>
+  <action name="action_license">
+   <property name="text">
+    <string>Lisensi</string>
+   </property>
+  </action>
+  <action name="action_changelog">
+   <property name="text">
+    <string>Log Perubahan</string>
    </property>
   </action>
  </widget>

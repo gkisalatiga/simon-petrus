@@ -13,6 +13,7 @@ import pyperclip
 
 import global_schema
 from handler.dialog.dialog_gallery import DialogGallery
+from httplib2.error import ServerNotFoundError
 from lib.external.thread import ThreadWithResult
 from lib.logger import Logger as Lg
 from lib.string_validator import StringValidator
@@ -150,22 +151,35 @@ class FrameGallery(QtWidgets.QFrame, frame_gallery.Ui_Frame):
 
     @pyqtSlot()
     def on_btn_fetch_clicked(self):
+        if self.cur_item is None:
+            return
+
         # The currently selected item's Google Drive folder ID.
         item_data = self.cur_item.data(self.DEFAULT_ITEM_ROLE)
         title = item_data['title']
         folder_id = item_data['folder_id']
 
+        # Whether we should only download the first 100 photos or fetch all photos in a Google Drive folder.
+        flag_fetch_all = global_schema.prefs.settings['gdrive_fetch_all_photos']
+        Lg('FrameGallery.on_btn_fetch_clicked', f'FLAG: Fetch all Google Drive photos: {flag_fetch_all}')
+        fetch_only_100 = False if flag_fetch_all == 1 else True
+
         # Disable all elements in this window, to prevent user input.
+        global_schema.anim.clear_and_show()
         global_schema.disable_widget(global_schema.win_main)
+
+        # The fallback progress bar and status.
+        global_schema.anim.set_prog_msg(50, 'Synchronizing the Google Drive folder content with GKI Salatiga+ ...')
 
         # Using multithreading to prevent GUI freezing [9]
         # (Supress downloading so that the image will not get downloaded on frame change.)
-        t = ThreadWithResult(target=global_schema.app_assets.get_gdrive_folder_list, args=(folder_id,))
+        t = ThreadWithResult(target=global_schema.app_assets.get_gdrive_folder_list,
+                             args=(folder_id, fetch_only_100,))
         t.start()
         while True:
             if getattr(t, 'result', None):
                 # Obtaining the thread function's result
-                all_files = t.result
+                all_files, is_success, return_msg = t.result
                 t.join()
 
                 break
@@ -174,6 +188,16 @@ class FrameGallery(QtWidgets.QFrame, frame_gallery.Ui_Frame):
                 # While we wait for the thread response to be returned, let us prevent
                 # Qt5 GUI freezing by repeatedly executing the following line:
                 QtCore.QCoreApplication.processEvents()
+
+        # Re-enable all elements in this window.
+        global_schema.anim.hide()
+        global_schema.enable_widget(global_schema.win_main)
+
+        if not is_success:
+            QtWidgets.QMessageBox.warning(
+                self, 'Gagal memutakhirkan data album!', return_msg, QtWidgets.QMessageBox.Ok
+            )
+            return
 
         # Set last update value.
         item_data['last_update'] = StringValidator.get_date()
@@ -192,16 +216,14 @@ class FrameGallery(QtWidgets.QFrame, frame_gallery.Ui_Frame):
         item_data['photos'] = copy.deepcopy(a)
         self.cur_item.setData(self.DEFAULT_ITEM_ROLE, item_data)
 
-        # Re-enable all elements in this window.
-        global_schema.enable_widget(global_schema.win_main)
-
         # Recalculate items and displays.
         self.on_list_gallery_item_changed()
         self.reconsider_album_order()
 
         # Notify the user about successful fetching.
         QtWidgets.QMessageBox.information(
-            self, 'Berhasil memutakhirkan data album!', f'Berhasil memutakhirkan data isi konten dari album: {title}',
+            self, 'Berhasil memutakhirkan data album!',
+            f'Berhasil memutakhirkan data isi konten dari album: {title}',
             QtWidgets.QMessageBox.Ok
         )
 

@@ -10,6 +10,8 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QMessageBox
 
 import global_schema
+from handler.dialog.dialog_changelog import DialogChangelog
+from handler.dialog.dialog_license import DialogLicense
 from handler.frame.frame_agenda import FrameAgenda
 from handler.frame.frame_carousel import FrameCarousel
 from handler.frame.frame_default import FrameDefault
@@ -92,8 +94,16 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         self.fragment_layout.addWidget(fragment)
 
     @pyqtSlot()
+    def on_action_changelog_triggered(self):
+        DialogChangelog(self).show()
+
+    @pyqtSlot()
     def on_action_exit_triggered(self):
         self.close()
+
+    @pyqtSlot()
+    def on_action_license_triggered(self):
+        DialogLicense(self).show()
 
     @pyqtSlot()
     def on_action_settings_triggered(self):
@@ -168,7 +178,7 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         while True:
             if getattr(t, 'result', None):
                 # Obtaining the thread function's result
-                is_success = t.result
+                is_success, refresh_msg = t.result
                 t.join()
 
                 break
@@ -185,7 +195,7 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
         if is_success:
             QtWidgets.QMessageBox.information(
                 self, 'Berhasil menyinkronisasi!',
-                'Data JSON dari repositori utama GKI Salatiga+ berhasil dimuat.',
+                f'Data JSON dari repositori utama GKI Salatiga+ berhasil dimuat: {refresh_msg}',
                 QtWidgets.QMessageBox.Ok
             )
 
@@ -194,6 +204,12 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
             # Refresh the Qt widget of the currently active fragment.
             self.clear_fragment_and_display(global_schema.cur_fragment)
+
+        else:
+            QtWidgets.QMessageBox.warning(
+                self, 'Gagal memperbarui data JSON dari repositori GitHub!', refresh_msg,
+                QtWidgets.QMessageBox.Ok
+            )
 
     @pyqtSlot()
     def on_cmd_agenda_clicked(self):

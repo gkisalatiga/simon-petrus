@@ -34,6 +34,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from instascrap import InstaScraper
 from lxml import html
+from requests.exceptions import ConnectionError
 from urllib.parse import urlparse, parse_qs
 import fitz
 import json
@@ -263,25 +264,36 @@ class Uploader(object):
         :param max_result: the number of video results (from 1 to 50) that we will obtain.
         :return: generic list of the playlist's retrieved video metadata.
         """
-        max_result = 50 if max_result > 50 else (0 if max_result < 0 else max_result)
+        try:
+            max_result = 50 if max_result > 50 else (0 if max_result < 0 else max_result)
 
-        # Prepare the YouTube API v3 API key.
-        key = self.app_db.credentials['api_youtube']
+            # Prepare the YouTube API v3 API key.
+            key = self.app_db.credentials['api_youtube']
 
-        # Preparing the request queries.
-        part = 'snippet'
+            # Preparing the request queries.
+            part = 'snippet'
 
-        global_schema.anim.set_prog_msg(50, 'Retrieving the latest playlist data ...')
+            global_schema.anim.set_prog_msg(50, 'Retrieving the latest playlist data ...')
 
-        # Fetching the data.
-        with requests.Session() as s:
-            r = s.get(
-                self.YT_ENDPOINT_PLAYLIST_ITEMS +
-                f'?key={key}&part={part}&playlistId={playlist_id}&maxResults={max_result}'
-            )
+            # Fetching the data.
+            with requests.Session() as s:
+                r = s.get(
+                    self.YT_ENDPOINT_PLAYLIST_ITEMS +
+                    f'?key={key}&part={part}&playlistId={playlist_id}&maxResults={max_result}'
+                )
 
-        # Return the data.
-        return r.json()
+            # Return the data.
+            return r.json(), True, 'YouTube playlist data synchronization successful!'
+
+        except ConnectionError as e:
+            msg = f'Cannot scrape YouTube data because the internet is lost: {e}'
+            Lg('Uploader.get_yt_playlist_data', msg)
+            return [], False, msg
+
+        except Exception as e:
+            msg = f'Unknown error detected: {e}'
+            Lg('Uploader.get_yt_playlist_data', msg)
+            return [], False, msg
 
     def get_yt_rss_data(self, filter_title_keyword: str = '', channel_id: str = YT_GKIS_CHANNEL_ID):
         """
@@ -304,67 +316,78 @@ class Uploader(object):
                 - rating average (from 1 to 5)
                 - number of ratings
         """
-        # Fetching the data.
-        with requests.Session() as s:
-            global_schema.anim.set_prog_msg(50, 'Retrieving the latest RSS data ...')
+        try:
+            # Fetching the data.
+            with requests.Session() as s:
+                global_schema.anim.set_prog_msg(50, 'Retrieving the latest RSS data ...')
 
-            r = s.get(f'{self.YT_RSS_BASE_SOURCE}?channel_id={channel_id}')
-            c = html.fromstring(r.content)
+                r = s.get(f'{self.YT_RSS_BASE_SOURCE}?channel_id={channel_id}')
+                c = html.fromstring(r.content)
 
-            video_id = [l.split(':')[2] for l in c.xpath('//entry/id/text()')]
-            video_title = [l.strip() for l in c.xpath('//entry/title/text()')]
-            video_url = [l.strip() for l in c.xpath('//entry/link/@href')]
-            author_name = [l.strip() for l in c.xpath('//entry/author/name/text()')]
-            author_url = [l.strip() for l in c.xpath('//entry/author/uri/text()')]
-            date_published = [l.strip() for l in c.xpath('//entry/published/text()')]
-            date_updated = [l.strip() for l in c.xpath('//entry/updated/text()')]
-            video_thumbnail = [l.strip() for l in c.xpath('//entry//*[local-name()="media:thumbnail"]/@url')]
-            video_description = [l.strip() for l in c.xpath('//entry//*[local-name()="media:description"]/text()')]
-            number_of_views = [l.strip() for l in c.xpath('//entry//*[local-name()="media:statistics"]/@views')]
-            number_of_ratings = [l.strip() for l in c.xpath('//entry//*[local-name()="media:starrating"]/@count')]
-            rating_average = [l.strip() for l in c.xpath('//entry//*[local-name()="media:starrating"]/@average')]
+                video_id = [l.split(':')[2] for l in c.xpath('//entry/id/text()')]
+                video_title = [l.strip() for l in c.xpath('//entry/title/text()')]
+                video_url = [l.strip() for l in c.xpath('//entry/link/@href')]
+                author_name = [l.strip() for l in c.xpath('//entry/author/name/text()')]
+                author_url = [l.strip() for l in c.xpath('//entry/author/uri/text()')]
+                date_published = [l.strip() for l in c.xpath('//entry/published/text()')]
+                date_updated = [l.strip() for l in c.xpath('//entry/updated/text()')]
+                video_thumbnail = [l.strip() for l in c.xpath('//entry//*[local-name()="media:thumbnail"]/@url')]
+                video_description = [l.strip() for l in c.xpath('//entry//*[local-name()="media:description"]/text()')]
+                number_of_views = [l.strip() for l in c.xpath('//entry//*[local-name()="media:statistics"]/@views')]
+                number_of_ratings = [l.strip() for l in c.xpath('//entry//*[local-name()="media:starrating"]/@count')]
+                rating_average = [l.strip() for l in c.xpath('//entry//*[local-name()="media:starrating"]/@average')]
 
-            # The return data being built.
-            return_json = []
+                # The return data being built.
+                return_json = []
 
-            # Building the return JSON data.
-            # Assumes all the above lists have the same/identical size.
-            for i in range(len(video_id)):
-                # The filter. Continue the loop if the current entry does not match criteria.
-                if filter_title_keyword != '':
-                    if not video_title[i].lower().__contains__(filter_title_keyword.lower()):
-                        continue
+                # Building the return JSON data.
+                # Assumes all the above lists have the same/identical size.
+                for i in range(len(video_id)):
+                    # The filter. Continue the loop if the current entry does not match criteria.
+                    if filter_title_keyword != '':
+                        if not video_title[i].lower().__contains__(filter_title_keyword.lower()):
+                            continue
 
-                # Building the response JSON data.
-                a = {
-                    'is_data_empty': 0,
-                    'video_id': video_id[i],
-                    'video_title': video_title[i],
-                    'video_url': video_url[i],
-                    'author_name': author_name[i],
-                    'author_url': author_url[i],
-                    'date_published': date_published[i],
-                    'date_updated': date_updated[i],
-                    'video_thumbnail': video_thumbnail[i],
-                    'video_description': video_description[i],
-                    'number_of_views': number_of_views[i],
-                    'number_of_ratings': number_of_ratings[i],
-                    'rating_average': rating_average[i],
-                }
+                    # Building the response JSON data.
+                    a = {
+                        'is_data_empty': 0,
+                        'video_id': video_id[i],
+                        'video_title': video_title[i],
+                        'video_url': video_url[i],
+                        'author_name': author_name[i],
+                        'author_url': author_url[i],
+                        'date_published': date_published[i],
+                        'date_updated': date_updated[i],
+                        'video_thumbnail': video_thumbnail[i],
+                        'video_description': video_description[i],
+                        'number_of_views': number_of_views[i],
+                        'number_of_ratings': number_of_ratings[i],
+                        'rating_average': rating_average[i],
+                    }
 
-                # Appending to the general JSON dict.
-                return_json.append(a)
+                    # Appending to the general JSON dict.
+                    return_json.append(a)
 
-            # DEBUG.
-            # print(return_json)
+                # DEBUG.
+                # print(return_json)
 
-            # Mitigating infinite ThreadWithResult looping when an empty dict is returned.
-            if return_json is [] or len(return_json) == 0 or str(return_json) == '[]':
-                Lg('Uploader.get_yt_rss_data', 'Got some empty post-filtering data here.')
-                return [{'is_data_empty': 1}]
+                # Mitigating infinite ThreadWithResult looping when an empty dict is returned.
+                if return_json is [] or len(return_json) == 0 or str(return_json) == '[]':
+                    Lg('Uploader.get_yt_rss_data', 'Got some empty post-filtering data here.')
+                    return [{'is_data_empty': 1}], True, 'Sync successful but the returned data is empty!'
 
-        # Return the data.
-        return return_json
+            # Return the data.
+            return return_json, True, 'The YouTube playlist has been synchronized!'
+
+        except ConnectionError as e:
+            msg = f'Cannot scrape YouTube data because the internet is lost: {e}'
+            Lg('Uploader.get_yt_rss_data', msg)
+            return [], False, msg
+
+        except Exception as e:
+            msg = f'Unknown error detected: {e}'
+            Lg('Uploader.get_yt_rss_data', msg)
+            return [], False, msg
 
     def get_yt_video_data(self, video_id: str):
         """
@@ -535,7 +558,6 @@ class Uploader(object):
             traceback.print_exc()
             return False, msg
 
-
     def upload_google_drive(self, file_path: str, mime: str, folder_id: str, save_as: str):
         """
         Upload a file to Simon Petrus' specific Google Drive drop folder.
@@ -551,17 +573,13 @@ class Uploader(object):
                 'This method does not yet support uploading files larger than 5 MiB to Google Drive')
 
         # Parsing the token as the API credential.
-        token_json_location = self.prefs.TEMP_DIRECTORY + os.sep + 'gdrive_token.json'
-
-        # The file token.json stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if not os.path.exists(token_json_location):
-            with open(token_json_location, 'w') as fo:
-                json.dump(self.app_db.credentials.get('authorized_drive_oauth'), fo)
+        token_json_location = global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN
         creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
+
         # If the credential has expired, refresh it.
         if creds.expired and creds.refresh_token:
+            Lg('Uploader.upload_google_drive',
+               'The Google Drive OAUTH2.0 credential is expired. Refreshing now ...')
             creds.refresh(Request())
             # Save the refreshed credentials for the next run
             with open(token_json_location, 'w') as token:

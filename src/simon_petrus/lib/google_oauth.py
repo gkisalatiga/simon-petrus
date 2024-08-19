@@ -4,13 +4,16 @@ AGPL-3.0-licensed
 Copyright (C) GKI Salatiga 2024
 Written by Samarthya Lykamanuella (github.com/groaking)
 """
+import global_schema
 from lib.preferences import SavedPreferences
 
-class SetupOAUTH(object):
 
-    def get_oauth_credential(self):
+class SetupOAUTH(object):
+    pass
+
+    '''def get_oauth_credential(self):
         # Parsing the token as the API credential.
-        token_json_location = SavedPreferences.TEMP_DIRECTORY + os.sep + 'gdrive_token.json'
+        token_json_location = global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN
 
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
@@ -30,5 +33,5 @@ class SetupOAUTH(object):
         """
         Write the Google OAUTH2.0 refresh token file to a volatile private temporary directory.
         :return: nothing.
-        """
+        """'''
         

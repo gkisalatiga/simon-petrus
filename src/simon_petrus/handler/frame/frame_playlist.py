@@ -9,6 +9,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSlot
 from urllib.parse import urlparse
 import copy
+import json
 import pyperclip
 
 import global_schema
@@ -170,6 +171,9 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
 
     @pyqtSlot()
     def on_btn_fetch_clicked(self):
+        if self.cur_item is None:
+            return
+
         # The currently selected item's Google Drive folder ID.
         item_data = self.cur_item.data(self.DEFAULT_ITEM_ROLE)
         title = item_data['title']
@@ -197,7 +201,7 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
         while True:
             if getattr(t, 'result', None):
                 # Obtaining the thread function's result
-                results = t.result
+                results, is_success, return_msg = t.result
                 t.join()
 
                 break
@@ -206,6 +210,16 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
                 # While we wait for the thread response to be returned, let us prevent
                 # Qt5 GUI freezing by repeatedly executing the following line:
                 QtCore.QCoreApplication.processEvents()
+
+        # Re-enable all elements in this window.
+        global_schema.enable_widget(global_schema.win_main)
+        global_schema.anim.hide()
+
+        if not is_success:
+            QtWidgets.QMessageBox.warning(
+                self, 'Gagal memutakhirkan data!', return_msg, QtWidgets.QMessageBox.Ok
+            )
+            return
 
         # Set last update value.
         item_data['last-update'] = StringValidator.get_date()
@@ -222,7 +236,11 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
                         'link': b['video_url'],
                         'thumbnail': b['video_thumbnail']
                     })
+
         elif kind == 'regular':
+            # DEBUG.
+            # print(json.dumps(results))
+
             for b in results['items']:
 
                 # Mitigate "high quality" thumbnail cannot be specified.
@@ -235,17 +253,13 @@ class FramePlaylist(QtWidgets.QFrame, frame_playlist.Ui_Frame):
                     'title': b['snippet']['title'],
                     'date': b['snippet']['publishedAt'].split('T')[0],
                     'desc': b['snippet']['description'],
-                    'link': StringValidator.get_youtube_link_from_id(b['id']),
+                    'link': StringValidator.get_youtube_link_from_id(b['snippet']['resourceId']['videoId']),
                     'thumbnail': b['snippet']['thumbnails']['high']['url']
                 })
 
         # Overwriting the item's data.
         item_data['content'] = copy.deepcopy(a)
         self.cur_item.setData(self.DEFAULT_ITEM_ROLE, item_data)
-
-        # Re-enable all elements in this window.
-        global_schema.enable_widget(global_schema.win_main)
-        global_schema.anim.hide()
 
         # Recalculate items and displays.
         self.on_list_pinned_item_changed()
