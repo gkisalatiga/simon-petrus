@@ -23,11 +23,13 @@ class ScreenSettings(QtWidgets.QMainWindow, screen_settings.Ui_MainWindow):
 
         # Displaying the appropriate settings value in each field.
         self.chk_autosync.setChecked(True if global_schema.prefs.settings['autosync_on_launch'] == 1 else False)
+        self.chk_gdrive_fetch_all.setChecked(True if global_schema.prefs.settings['gdrive_fetch_all_photos'] == 1 else False)
 
     @pyqtSlot()
     def on_btn_apply_clicked(self):
         # Saving the settings value.
         global_schema.prefs.settings['autosync_on_launch'] = 1 if self.chk_autosync.isChecked() is True else 0
+        global_schema.prefs.settings['gdrive_fetch_all_photos'] = 1 if self.chk_gdrive_fetch_all.isChecked() is True else 0
 
         # Writing config into file.
         global_schema.prefs.save_config()

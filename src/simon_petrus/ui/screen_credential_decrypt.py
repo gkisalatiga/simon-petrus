@@ -14,7 +14,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
+        MainWindow.setWindowModality(QtCore.Qt.ApplicationModal)
         MainWindow.resize(685, 281)
+        MainWindow.setDockNestingEnabled(True)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.btn_cred_selector = QtWidgets.QPushButton(self.centralwidget)

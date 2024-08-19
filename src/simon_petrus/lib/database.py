@@ -121,11 +121,15 @@ class AppDatabase(object):
             # DEBUG. Please comment out on production.
             # print(r.json())
 
+            # Assumes everything in the JSON file is in sync with the "db" property/variable.
+            with open(global_schema.prefs.JSON_DATA_SCHEMA, 'r') as fi:
+                j = json.load(fi)
+
             # Merging the "meta" and "data" of the JSON schema.
-            j = {
+            '''j = {
                 'meta': self.db_meta,
                 'data': self.db
-            }
+            }'''
             j_as_json_string = json.dumps(j, ensure_ascii=False, indent=4)
 
             # DEBUG. Please comment out on production.
@@ -154,10 +158,13 @@ class AppDatabase(object):
             r = requests.put(self.GITHUB_JSON_URL, headers=headers, json=data_payload)
 
             # DEBUG. Please comment out after use.
-            # print(r.json())
+            # print(json.dumps(r.json()))
 
             # We need http return code 200 in order to detect that the change has been uploaded successfully.
-            if r.json()['status'] != '200':
+            if r.json().get('commit').keys().__contains__('sha'):
+                # This is a legit connection with the GitHub repo.
+                pass
+            elif r.json().keys().__contains__('status') and r.json().get('status') != '200':
                 raise InvalidPushCredentialError
 
             # Concluding logging.

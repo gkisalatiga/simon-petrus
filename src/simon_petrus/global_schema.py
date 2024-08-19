@@ -4,8 +4,12 @@ AGPL-3.0-licensed
 Copyright (C) GKI Salatiga 2024
 Written by Samarthya Lykamanuella (github.com/groaking)
 """
+from urllib.error import URLError
+import urllib
+
 from PyQt5 import QtWidgets
 
+from lib.logger import Logger as Lg
 from lib.assets import AppAssets
 from lib.database import AppDatabase
 from lib.preferences import SavedPreferences
@@ -105,8 +109,19 @@ def refresh_all_data():
     to the carousel, custom images, and static HTML.
     :return: True (not significant, but it is expressed so that the multithreader won't freeze infinitely).
     """
-    app_db.refresh_json_schema()
-    app_assets.get_carousel()
-    app_assets.get_gallery()
-    app_assets.get_main_qris()
-    return True
+    try:
+        app_db.refresh_json_schema()
+        app_assets.get_carousel()
+        app_assets.get_gallery()
+        app_assets.get_main_qris()
+        return True, 'Data synchronization successful!'
+
+    except URLError as e:
+        msg = f'Error encountered while refreshing all data. The internet suddenly disconnects: {e}'
+        Lg('global_schema.refresh_all_data', msg)
+        return False, msg
+
+    except Exception as e:
+        msg = f'Unknown error encountered: {e}'
+        Lg('global_schema.refresh_all_data', msg)
+        return False, msg

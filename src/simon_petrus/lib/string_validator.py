@@ -104,6 +104,31 @@ class StringValidator(object):
         return v
 
     @staticmethod
+    def get_youtube_link_from_id(yt_id: str):
+        """
+        Obtains a valid YouTube link from a given YT video id.
+        :param yt_id: the YouTube ID which will be converted to link.
+        :return: a YouTube video URL.
+        """
+        return f'https://www.youtube.com/watch?v={yt_id}'
+
+    @staticmethod
+    def get_youtube_playlist_id_from_link(yt_url: str):
+        """
+        Self-explanatory.
+        """
+        return parse_qs(urlparse(yt_url).query)['list'][0]
+
+    @staticmethod
+    def get_youtube_playlist_link_from_id(playlist_id: str):
+        """
+        Obtains a valid YouTube playlist link from a given playlist ID.
+        :param playlist_id: the playlist ID.
+        :return: a YouTube playlist URL.
+        """
+        return f'https://www.youtube.com/playlist?list={playlist_id}'
+
+    @staticmethod
     def zero_pad(num: int, digits: int):
         """
         Zero-pad any integer with leading zeros.

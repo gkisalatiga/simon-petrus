@@ -4,6 +4,8 @@ AGPL-3.0-licensed
 Copyright (C) GKI Salatiga 2024
 Written by Samarthya Lykamanuella (github.com/groaking)
 """
+import json
+import os
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSlot
@@ -25,6 +27,9 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
 
         # Prevent resizing. [10]
         self.setFixedSize(self.size())
+
+        # Associate pressing enter with decryption.
+        self.field_cred.returnPressed.connect(self.on_field_cred_enter_pressed)
 
         # The temporary value of the selected credential location.
         self.cred_loc = ''
@@ -65,6 +70,11 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
         else:
             global_schema.prefs.settings['remember_cred_loc'] = 0
             global_schema.prefs.settings['saved_cred_loc'] = ''
+
+        # Either way, we will temporarily save the .json.enc file so that we can
+        # overwrite the expired Google OAUTH tokens at app shutdown later on.
+        global_schema.prefs.session_json_enc_path = self.txt_cred_loc.text()
+        global_schema.prefs.session_secret = self.field_cred.text()
 
         # Save the settings.
         global_schema.prefs.save_config()
@@ -123,7 +133,11 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
             if not global_schema.app_db.is_db_exist or not global_schema.app_db.is_db_valid or global_schema.prefs.settings['autosync_on_launch'] == 1:
 
                 # Disable all elements in this window for a while, to prevent user input.
+                global_schema.anim.clear_and_show()
                 global_schema.disable_widget(self)
+
+                # Set the fallback progress bar progression.
+                global_schema.anim.set_prog_msg(50, 'Synchronizing the JSON data with the GitHub repository main branch ...')
 
                 # Using multithreading to prevent GUI freezing [9]
                 t = ThreadWithResult(target=global_schema.refresh_all_data, args=())
@@ -131,7 +145,7 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
                 while True:
                     if getattr(t, 'result', None):
                         # Obtaining the thread function's result
-                        _ = t.result
+                        is_refresh_success, refresh_msg = t.result
                         t.join()
 
                         break
@@ -141,8 +155,34 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
                         # Qt5 GUI freezing by repeatedly executing the following line:
                         QtCore.QCoreApplication.processEvents()
 
+                # Display whatever status message returned from the decryption to the user.
+                msg_title = 'Synchronization successful!' if is_refresh_success else 'Failed to refresh data!'
+                self.label_status.setText(msg_title)
+                QtCore.QCoreApplication.processEvents()
+                QtWidgets.QMessageBox.warning(
+                    self, msg_title, refresh_msg,
+                    QtWidgets.QMessageBox.Ok
+                )
+
                 # Re-enable the window.
+                global_schema.anim.hide()
                 global_schema.enable_widget(self)
+
+            # Ensuring that the OAUTH2.0 credential is already exported.
+            # ---
+            # The file token.json stores the user's access and refresh tokens, and is
+            # created automatically when the authorization flow completes for the first
+            # time.
+            if not os.path.exists(global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN):
+                try:
+                    with open(global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN, 'w') as fo:
+                        json.dump(global_schema.app_db.credentials.get('authorized_drive_oauth'), fo)
+                        Lg('ScreenCredentialDecrypt.on_btn_decrypt_clicked',
+                           f'Exported the OAUTH2.0 token JSON file: {global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN}')
+
+                except Exception as e:
+                    Lg('ScreenCredentialDecrypt.on_btn_decrypt_clicked',
+                       f'Failed to export the OAUTH2.0 token file: {e}')
 
             # Open the control panel (administrator dashboard).
             self.hide()
@@ -160,3 +200,7 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
             self.field_cred.setEchoMode(QtWidgets.QLineEdit.Normal)
         else:
             self.field_cred.setEchoMode(QtWidgets.QLineEdit.Password)
+
+    @pyqtSlot()
+    def on_field_cred_enter_pressed(self):
+        self.on_btn_decrypt_clicked()

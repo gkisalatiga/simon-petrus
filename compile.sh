@@ -2,7 +2,7 @@
 # Compile Simon Petrus into a Linux executable
 
 # The compiled binary name.
-target_bin_name="simon-petrus-v0.2.0-pyinstaller-linux"
+target_bin_name="simon-petrus-v0.3.0-pyinstaller-linux"
 
 # SPEC file generator.
 pyinstaller src/simon_petrus/main.py \

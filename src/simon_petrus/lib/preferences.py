@@ -8,12 +8,18 @@ Written by Samarthya Lykamanuella (github.com/groaking)
 from json.decoder import JSONDecodeError
 import json
 import os
-# from pathlib import Path
+from pathlib import Path
+
 import platformdirs as pfd
 import shutil
 import tempfile
 
+from PyQt5 import QtCore
+
+import global_schema
+from lib.credentials import CredentialGenerator
 from lib.exceptions import MalformedSettingsJSON
+from lib.external.thread import ThreadWithResult
 from lib.logger import Logger as Lg
 
 
@@ -49,12 +55,15 @@ class SavedPreferences(object):
     # The default settings/config template JSON structure.
     JSON_SETTINGS_TEMPLATE = {
         'autosync_on_launch': 1,
+        'gdrive_fetch_all_photos': 0,
         'remember_cred_loc': 0,
         'saved_cred_loc': '',
     }
 
     def __init__(self):
         self.settings = {}
+        self.session_json_enc_path = ''
+        self.session_secret = ''
         pass
 
     def create_default_config(self):
@@ -90,13 +99,21 @@ class SavedPreferences(object):
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'Assets directory created: {self.ASSETS_DIRECTORY}')
         except FileExistsError:
             Lg('lib.preferences.SavedPreferences.init_config_dir', f'Assets folder already exists: {self.ASSETS_DIRECTORY}')
-        
+
+        # DEBUG. Why can't the temporary folder be created?
+        # _0x123 = '/tmp/0x123'
+        # print(f"Is exists?: {os.path.exists(self.TEMP_DIRECTORY)}")
+        # print(f"Creating: {_0x123}")
+        # Path(_0x123).mkdir(exist_ok=True, parents=True)
+        # print(f"{_0x123} Done.")
+
         # Ensuring that the temporary directory exists.
+        Path(self.TEMP_DIRECTORY).mkdir(exist_ok=True, parents=True)
         try:
             os.makedirs(self.TEMP_DIRECTORY, exist_ok=True)
-            Lg('lib.preferences.SavedPreferences', f'Created the temporary directory: {self.TEMP_DIRECTORY}')
+            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Created the temporary directory: {self.TEMP_DIRECTORY}')
         except FileExistsError:
-            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Temporary directory already exists: {self.CONF_DIRECTORY}')
+            Lg('lib.preferences.SavedPreferences.init_config_dir', f'Temporary directory already exists: {self.TEMP_DIRECTORY}')
 
         # Checking if the settings JSON file exists and is valid.
         try:
@@ -165,6 +182,38 @@ class SavedPreferences(object):
         such as removing the temporary directory.
         :return: nothing.
         """
+        # DEBUG.
+        # print(self.session_json_enc_path)
+        # print(self.session_secret)
+        # print(self.JSON_GOOGLE_OAUTH_TOKEN)
+
+        # Saving the latest generated Google Drive OAUTH token to the encrypted JSON location.
+        if os.path.isfile(self.session_json_enc_path) and os.path.isfile(self.JSON_GOOGLE_OAUTH_TOKEN):
+            Lg('lib.preferences.SavedPreferences.shutdown', f'Overwriting old and expired Google OAUTH tokens ...')
+
+            # The current session's loaded credential.
+            a = global_schema.app_db.credentials
+
+            # Converting the OAUTH2.0 JSON file into a Python dict.
+            with open(self.JSON_GOOGLE_OAUTH_TOKEN, 'r') as b:
+                a['authorized_drive_oauth'] = json.load(b)
+
+            # Now encrypt the JSON data.
+            generator = CredentialGenerator()
+
+            # Encrypt the credential.
+            encrypted_bytes = generator.encrypt(a, self.session_secret)
+
+            # Save the file.
+            with open(self.session_json_enc_path, 'wb') as fo:
+                fo.write(encrypted_bytes)
+
+        else:
+            Lg(
+                'lib.preferences.SavedPreferences.shutdown',
+                f'It\'s weird! Why doesn\'t the Google API OAUTH2.0 token refresher get updated?'
+            )
+
         # Removing the temporary directory in order to conserve space and maximize security.
         if os.path.isdir(self.TEMP_DIRECTORY):
             Lg('lib.preferences.SavedPreferences.shutdown', f'Removing the temporary directory ...')
