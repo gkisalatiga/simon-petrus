@@ -113,6 +113,7 @@ def refresh_all_data():
         app_db.refresh_json_schema()
         app_assets.get_carousel()
         app_assets.get_gallery()
+        app_assets.get_static()
         app_assets.get_main_qris()
         return True, 'Data synchronization successful!'
 

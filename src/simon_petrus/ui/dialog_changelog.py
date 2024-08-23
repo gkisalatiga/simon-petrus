@@ -39,7 +39,7 @@ class Ui_Dialog(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 615, 1125))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 615, 1181))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -68,6 +68,10 @@ class Ui_Dialog(object):
         self.app_title.setText(_translate("Dialog", "CHANGELOG"))
         self.app_title_2.setText(_translate("Dialog", "Simon Petrus v0.3.0 build 13 - August 2024"))
         self.app_caption.setText(_translate("Dialog", "# Simon Petrus Changelog\n"
+"\n"
+"## v0.3.1 (14) --- 2024-08-23\n"
+"\n"
+"- New: Added \"static content\" (church profile content) editor\n"
 "\n"
 "## v0.3.0 (13) --- 2024-08-20\n"
 "\n"

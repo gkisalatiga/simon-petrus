@@ -50,6 +50,11 @@ class AppAssets(object):
     GALLERY_JSON_API = 'https://api.github.com/repos/gkisalatiga/gkisplus-data/contents/gkisplus-gallery.json'
     GALLERY_JSON_URL = 'https://raw.githubusercontent.com/gkisalatiga/gkisplus-data/main/gkisplus-gallery.json'
 
+    # The URL, path (relative to repo's root), and API end point of the static (profile info) JSON file.
+    STATIC_JSON_PATH = 'gkisplus-static.json'
+    STATIC_JSON_API = 'https://api.github.com/repos/gkisalatiga/gkisplus-data/contents/gkisplus-static.json'
+    STATIC_JSON_URL = 'https://raw.githubusercontent.com/gkisalatiga/gkisplus-data/main/gkisplus-static.json'
+
     # The paths to primary assets section: carousel, static HTML, and custom images.
     ASSETS_PATH_CAROUSEL = 'carousel'
     ASSETS_PATH_IMAGES = 'images'
@@ -70,17 +75,21 @@ class AppAssets(object):
     ]
 
     def __init__(self):
+        self.static_meta = None
+        self.static = None
         self.credentials = global_schema.app_db.credentials
         self.db = global_schema.app_db.db
         self.db_meta = global_schema.app_db.db_meta
         self.prefs = global_schema.prefs
         self.saved_carousel_loc = None
         self.saved_gallery_loc = None
+        self.saved_static_loc = None
         self.saved_qris_loc = None
 
         # This determines whether to upload files.
         self.do_upload_carousel = False
         self.do_upload_gallery = True  # --- better this way; no need to check the individual state one by one
+        self.do_upload_static = True  # --- better this way; no need to check the individual state one by one
         self.do_upload_main_qris = False
 
         # The gallery JSON dict.
@@ -130,6 +139,12 @@ class AppAssets(object):
 
         # Init the gallery JSON file, if and only if it is already downloaded locally.
         self.get_gallery(True)
+
+        # Init the static JSON file location.
+        self.saved_static_loc = self.prefs.ASSETS_DIRECTORY + os.sep + self.STATIC_JSON_PATH
+
+        # Init the static JSON file, if and only if it is already downloaded locally.
+        self.get_static(True)
 
         # Post-logging.
         Lg('lib.assets.AppAssets.init_assets_folder', f'Initialization done!')
@@ -278,6 +293,36 @@ class AppAssets(object):
         # Return the main QRIS local path.
         return saved_file_path
 
+    def get_static(self, supress_download: bool = False):
+        """
+        Download the GKI Salatiga+ static JSON file from the GitHub repo.
+        :param supress_download: whether to only return the downloaded path without actually downloading any file.
+        :return: the local path to the downloaded static JSON file.
+        """
+        download_url = self.STATIC_JSON_URL
+        saved_file_path = self.saved_static_loc
+
+        # Saving/downloading the JSON file.
+        if not supress_download:
+            urllib.request.urlretrieve(download_url, saved_file_path)
+            Lg('lib.assets.AppAssets.get_static', f'Successfully downloaded: {download_url}!')
+
+        # Ensures file exists.
+        if not os.path.isfile(saved_file_path):
+            return None
+
+        # Parse the JSON.
+        with open(saved_file_path, 'r') as fi:
+            j = json.load(fi)
+        self.static = j['static']
+        self.static_meta = j['meta']
+
+        # DEBUG.
+        # print(json.dumps(j))
+
+        # Return the carousel zip local path.
+        return saved_file_path
+
     def push_assets(self, anim_window: ScreenLoadingAnimation = None):
         """
         Push all assets to the GitHub repo, with regard to file changes to save bandwith.
@@ -306,6 +351,13 @@ class AppAssets(object):
                 anim_window.set_prog_msg(25, msg)
                 Lg('lib.assets.AppAssets.push_assets', msg)
                 self.push_gallery()
+
+            # Uploading the gallery images.
+            if self.do_upload_static:
+                msg = f'Uploading the static contents ...'
+                anim_window.set_prog_msg(30, msg)
+                Lg('lib.assets.AppAssets.push_assets', msg)
+                self.push_static()
 
             # Post-logging.
             msg = f'Data upload to the GitHub repo of GKI Salatiga+ successful!'
@@ -490,6 +542,53 @@ class AppAssets(object):
         msg = f'Pushing GKI Salatiga+ app QRIS image to main repository branch successful!'
         Lg('lib.database.AppDatabase.push_qris', msg)
 
+    def push_static(self):
+        """
+        Pushing the static content JSON file.
+        :return: nothing.
+        """
+        # Retrieving the latest SHA in order to detect changes and checkpoints.
+        r = requests.get(self.STATIC_JSON_API)
+        latest_sha = r.json()['sha']
+
+        # DEBUG. Please comment out on production.
+        # print(r.json())
+
+        # Read the image file.
+        with open(self.saved_static_loc, 'rb') as fi:
+            static_bytes = fi.read()
+
+        # Converting the file bytes into base64.
+        static_b64_data = base64.b64encode(static_bytes).decode('UTF-8')
+
+        # DEBUG. Please always comment out.
+        # print(self.credentials)
+
+        # Preparing the push request header and payload data.
+        headers = {
+            'Authorization': f'Bearer {self.credentials["api_github"]}',
+            'Content-Type': 'application/json'
+        }
+        data_payload = {
+            'message': 'Manual static content update from "Simon Petrus"',
+            'content': static_b64_data,
+            'branch': 'main',
+            'sha': latest_sha,
+            'path': self.STATIC_JSON_PATH
+        }
+
+        # Sending the http request.
+        msg = f'Uploading the static content JSON data payload ...'
+        Lg('lib.assets.AppAssets.push_static', msg)
+        r = requests.put(self.STATIC_JSON_API, headers=headers, json=data_payload)
+
+        # DEBUG. Please comment out after use.
+        # print(r.json())
+
+        # Concluding logging.
+        msg = f'Pushing GKI Salatiga+ app static content JSON file to main repository branch successful!'
+        Lg('lib.database.AppDatabase.push_static', msg)
+
     def queue_main_qris_change(self, new_qris_path: str):
         """
         Queue to change the QRIS image with a newer one as well as detecting changes between old and new QRIS images,
@@ -535,6 +634,27 @@ class AppAssets(object):
             # Write/dump the JSON file.
             json.dump(a, fo, ensure_ascii=False, indent=4)
             Lg('lib.assets.AppAssets.save_local_gallery', f'Saved the gallery JSON file successfully!')
+
+    def save_local_static(self):
+        """
+        Save the current state of the static content JSON schema into the local file.
+        :return: nothing.
+        """
+        with open(self.saved_static_loc, 'w') as fo:
+            # Preparing the JSON metadata.
+            self.static_meta['update-count'] += 1
+            self.static_meta['last-update'] = round(time.time())
+            self.static_meta['last-actor'] = 'SIMON_PETRUS'
+
+            # Prepare the dict to convert to JSON.
+            a = {
+                'meta': self.static_meta,
+                'static': self.static
+            }
+
+            # Write/dump the JSON file.
+            json.dump(a, fo, ensure_ascii=False, indent=4)
+            Lg('lib.assets.AppAssets.save_local_static', f'Saved the static content JSON file successfully!')
 
     def set_credentials(self, cred: dict):
         self.credentials = cred
