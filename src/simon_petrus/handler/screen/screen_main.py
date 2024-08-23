@@ -21,6 +21,7 @@ from handler.frame.frame_persembahan import FramePersembahan
 from handler.frame.frame_playlist import FramePlaylist
 from handler.frame.frame_renungan import FrameRenungan
 from handler.frame.frame_social_media import FrameSocialMedia
+from handler.frame.frame_static import FrameStatic
 from handler.frame.frame_tata_ibadah import FrameTataIbadah
 from handler.frame.frame_warta_jemaat import FrameWartaJemaat
 from handler.frame.frame_wordpress_home import FrameWordPressHome
@@ -75,6 +76,7 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
             'fragment_playlist': FramePlaylist(),
             'fragment_renungan': FrameRenungan(),
             'fragment_social_media': FrameSocialMedia(),
+            'fragment_static': FrameStatic(),
             'fragment_tata_ibadah': FrameTataIbadah(),
             'fragment_warta_jemaat': FrameWartaJemaat(),
             'fragment_wp_home': FrameWordPressHome()
@@ -254,6 +256,11 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
     @pyqtSlot()
     def on_cmd_social_media_clicked(self):
         global_schema.cur_fragment = 'fragment_social_media'
+        self.clear_fragment_and_display(global_schema.cur_fragment)
+
+    @pyqtSlot()
+    def on_cmd_static_clicked(self):
+        global_schema.cur_fragment = 'fragment_static'
         self.clear_fragment_and_display(global_schema.cur_fragment)
 
     @pyqtSlot()

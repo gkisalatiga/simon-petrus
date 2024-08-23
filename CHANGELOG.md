@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.3.1 (14) --- 2024-08-23
+
+- New: Added "static content" (church profile content) editor
+
 ## v0.3.0 (13) --- 2024-08-20
 
 - New: Added the dashboard menu to add and manage YouTube playlists of GKI Salatiga+

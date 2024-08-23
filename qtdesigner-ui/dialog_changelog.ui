@@ -80,7 +80,7 @@
       <x>0</x>
       <y>0</y>
       <width>615</width>
-      <height>1125</height>
+      <height>1181</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -96,6 +96,10 @@
        </property>
        <property name="text">
         <string># Simon Petrus Changelog
+
+## v0.3.1 (14) --- 2024-08-23
+
+- New: Added &quot;static content&quot; (church profile content) editor
 
 ## v0.3.0 (13) --- 2024-08-20
 

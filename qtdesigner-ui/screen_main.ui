@@ -118,8 +118,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>231</width>
-       <height>501</height>
+       <width>100</width>
+       <height>30</height>
       </rect>
      </property>
      <attribute name="label">
@@ -160,7 +160,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>215</width>
+         <width>193</width>
          <height>520</height>
         </rect>
        </property>
@@ -305,9 +305,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCommandLinkButton" name="commandLinkButton_4">
+         <widget class="QCommandLinkButton" name="cmd_static">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Konten Profil Gereja</string>
@@ -394,7 +394,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.3.0</string>
+     <string>v0.3.1</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
