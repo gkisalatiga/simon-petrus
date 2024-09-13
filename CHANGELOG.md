@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.3.3 (16) --- 2024-09-13
+
+- Fix: Fixed "cannot decode UTF-8 unicode" error when pushing the JSON schema to GitHub
+
 ## v0.3.2 (15) --- 2024-09-13
 
 - Fix: Fixed cannot parse unicode characters in the JSON files
