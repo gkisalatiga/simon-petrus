@@ -47,7 +47,7 @@ class AppDatabase(object):
         json_loc = self.prefs.JSON_DATA_SCHEMA
         if os.path.isfile(json_loc):
             self.is_db_exist = True
-            with open(json_loc, 'r') as fi:
+            with open(json_loc, 'r', encoding='utf-8') as fi:
                 try:
                     parsed_json = json.load(fi)
                     self.db = parsed_json['data']
@@ -80,7 +80,7 @@ class AppDatabase(object):
         try:
             r = requests.get(self.GITHUB_JSON_URL)
             j = r.json()
-            with open(save_path, 'w') as fo:
+            with open(save_path, 'w', encoding='utf-8') as fo:
                 fo.write(base64.b64decode(j['content']).decode('utf-8'))
             
             # Upon successful JSON data refresh, attempt to reload the JSON data again.
