@@ -118,8 +118,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>98</width>
-       <height>28</height>
+       <width>100</width>
+       <height>30</height>
       </rect>
      </property>
      <attribute name="label">
@@ -384,7 +384,7 @@
      <rect>
       <x>270</x>
       <y>10</y>
-      <width>61</width>
+      <width>241</width>
       <height>41</height>
      </rect>
     </property>
@@ -394,7 +394,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.3.2</string>
+     <string>v0.3.3</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

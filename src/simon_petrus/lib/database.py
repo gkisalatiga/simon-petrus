@@ -122,7 +122,7 @@ class AppDatabase(object):
             # print(r.json())
 
             # Assumes everything in the JSON file is in sync with the "db" property/variable.
-            with open(global_schema.prefs.JSON_DATA_SCHEMA, 'r') as fi:
+            with open(global_schema.prefs.JSON_DATA_SCHEMA, 'r', encoding='utf-8') as fi:
                 j = json.load(fi)
 
             # Merging the "meta" and "data" of the JSON schema.
