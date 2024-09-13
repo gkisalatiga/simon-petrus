@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.3.2 (15) --- 2024-09-13
+
+- Fix: Fixed cannot parse unicode characters in the JSON files
+
 ## v0.3.1 (14) --- 2024-08-23
 
 - New: Added "static content" (church profile content) editor
