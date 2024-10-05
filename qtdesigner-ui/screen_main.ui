@@ -118,8 +118,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>100</width>
-       <height>30</height>
+       <width>231</width>
+       <height>501</height>
       </rect>
      </property>
      <attribute name="label">
@@ -160,7 +160,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>193</width>
+         <width>215</width>
          <height>520</height>
         </rect>
        </property>
@@ -341,9 +341,9 @@
    <widget class="QLabel" name="app_title">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>591</width>
+      <x>110</x>
+      <y>20</y>
+      <width>481</width>
       <height>41</height>
      </rect>
     </property>
@@ -364,14 +364,15 @@
    <widget class="QLabel" name="app_subtitle">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>110</x>
       <y>80</y>
-      <width>591</width>
+      <width>481</width>
       <height>21</height>
      </rect>
     </property>
     <property name="font">
      <font>
+      <pointsize>9</pointsize>
       <italic>true</italic>
      </font>
     </property>
@@ -382,9 +383,9 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>270</x>
-      <y>10</y>
-      <width>241</width>
+      <x>390</x>
+      <y>20</y>
+      <width>201</width>
       <height>41</height>
      </rect>
     </property>
@@ -394,7 +395,7 @@
      </font>
     </property>
     <property name="text">
-     <string>v0.3.3</string>
+     <string>v0.3.4</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -404,7 +405,7 @@
     <property name="geometry">
      <rect>
       <x>620</x>
-      <y>10</y>
+      <y>20</y>
       <width>201</width>
       <height>31</height>
      </rect>
@@ -431,7 +432,7 @@
     <property name="geometry">
      <rect>
       <x>620</x>
-      <y>40</y>
+      <y>50</y>
       <width>201</width>
       <height>31</height>
      </rect>
@@ -443,21 +444,37 @@
    <widget class="QLabel" name="app_subtitle_2">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>50</y>
-      <width>591</width>
+      <x>110</x>
+      <y>60</y>
+      <width>481</width>
       <height>21</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>12</pointsize>
+      <pointsize>10</pointsize>
       <weight>75</weight>
       <bold>true</bold>
      </font>
     </property>
     <property name="text">
      <string>SISTEM MONITORING DAN PENGELOLAAN DATA TERPADU GKI SALATIGA</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_logo">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>81</width>
+      <height>101</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>-</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
   </widget>

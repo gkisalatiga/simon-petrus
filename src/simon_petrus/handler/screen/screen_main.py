@@ -7,6 +7,7 @@ Written by Samarthya Lykamanuella (github.com/groaking)
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMessageBox
 
 import global_schema
@@ -26,6 +27,7 @@ from handler.frame.frame_tata_ibadah import FrameTataIbadah
 from handler.frame.frame_warta_jemaat import FrameWartaJemaat
 from handler.frame.frame_wordpress_home import FrameWordPressHome
 from handler.screen.screen_settings import ScreenSettings
+from lib.external.meipass import resource_path
 from lib.external.thread import ThreadWithResult
 from lib.logger import Logger as Lg
 from ui import screen_main
@@ -42,6 +44,13 @@ class ScreenMain(QtWidgets.QMainWindow, screen_main.Ui_MainWindow):
 
         # DEBUG. Displaying the default first fragment to display.
         Lg('ScreenMain', f'Displaying the first/default fragment: {global_schema.cur_fragment}')
+
+        # Display the logo.
+        # SOURCE: https://www.pythonguis.com/faq/adding-images-to-pyqt5-applications
+        pixmap = QPixmap(resource_path('assets/seasonal_logo.png'))
+        self.label_logo.setPixmap(pixmap)
+        self.label_logo.setScaledContents(True)
+        # self.label_logo.resize(pixmap.width(), pixmap.height())
 
         # Displaying the default fragment.
         self.clear_fragment_and_display(global_schema.cur_fragment)

@@ -28,7 +28,7 @@ REFERENCES:
 
 from datetime import datetime as dt
 from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
@@ -572,18 +572,14 @@ class Uploader(object):
             raise UploadFileSizeTooBig(
                 'This method does not yet support uploading files larger than 5 MiB to Google Drive')
 
-        # Parsing the token as the API credential.
-        token_json_location = global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN
-        creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
+        # Parsing the Service Account key file as the API credential.
+        account_service_json_location = global_schema.prefs.JSON_GOOGLE_ACCOUNT_SERVICE_KEY
 
-        # If the credential has expired, refresh it.
-        if creds.expired and creds.refresh_token:
-            Lg('Uploader.upload_google_drive',
-               'The Google Drive OAUTH2.0 credential is expired. Refreshing now ...')
-            creds.refresh(Request())
-            # Save the refreshed credentials for the next run
-            with open(token_json_location, 'w') as token:
-                token.write(creds.to_json())
+        # Build the credential using the provided Service Account key file.
+        creds = service_account.Credentials.from_service_account_file(
+            filename=account_service_json_location,
+            scopes=self.GOOGLE_DRIVE_SCOPES
+        )
 
         # Attempt to upload the requested file to Google Drive.
         # Error-catching is done at level of the method which called this function.
@@ -597,6 +593,7 @@ class Uploader(object):
         file_metadata = {'name': save_as, 'parents': [parent_gdrive_folder]}
         media = MediaFileUpload(file_path, mimetype=mime)
         # pylint: disable=maybe-no-member
+        print(5)
         file = (
             service.files()
             .create(body=file_metadata, media_body=media, fields='*')

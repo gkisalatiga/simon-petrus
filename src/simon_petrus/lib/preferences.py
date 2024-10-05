@@ -50,7 +50,7 @@ class SavedPreferences(object):
     JSON_DATA_SCHEMA = CONF_DIRECTORY + os.sep + 'data_schema.json'
 
     # The temporarily stored Google OAUTH2.0 token.
-    JSON_GOOGLE_OAUTH_TOKEN = TEMP_DIRECTORY + os.sep + 'temp_oauth_token_refresh.json'
+    JSON_GOOGLE_ACCOUNT_SERVICE_KEY = TEMP_DIRECTORY + os.sep + 'temp_oauth_token_refresh.json'
 
     # The default settings/config template JSON structure.
     JSON_SETTINGS_TEMPLATE = {
@@ -188,14 +188,14 @@ class SavedPreferences(object):
         # print(self.JSON_GOOGLE_OAUTH_TOKEN)
 
         # Saving the latest generated Google Drive OAUTH token to the encrypted JSON location.
-        if os.path.isfile(self.session_json_enc_path) and os.path.isfile(self.JSON_GOOGLE_OAUTH_TOKEN):
+        if os.path.isfile(self.session_json_enc_path) and os.path.isfile(self.JSON_GOOGLE_ACCOUNT_SERVICE_KEY):
             Lg('lib.preferences.SavedPreferences.shutdown', f'Overwriting old and expired Google OAUTH tokens ...')
 
             # The current session's loaded credential.
             a = global_schema.app_db.credentials
 
             # Converting the OAUTH2.0 JSON file into a Python dict.
-            with open(self.JSON_GOOGLE_OAUTH_TOKEN, 'r') as b:
+            with open(self.JSON_GOOGLE_ACCOUNT_SERVICE_KEY, 'r') as b:
                 a['authorized_drive_oauth'] = json.load(b)
 
             # Now encrypt the JSON data.

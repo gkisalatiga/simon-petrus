@@ -173,12 +173,12 @@ class ScreenCredentialDecrypt(QtWidgets.QMainWindow, screen_credential_decrypt.U
             # The file token.json stores the user's access and refresh tokens, and is
             # created automatically when the authorization flow completes for the first
             # time.
-            if not os.path.exists(global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN):
+            if not os.path.exists(global_schema.prefs.JSON_GOOGLE_ACCOUNT_SERVICE_KEY):
                 try:
-                    with open(global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN, 'w') as fo:
+                    with open(global_schema.prefs.JSON_GOOGLE_ACCOUNT_SERVICE_KEY, 'w') as fo:
                         json.dump(global_schema.app_db.credentials.get('authorized_drive_oauth'), fo)
                         Lg('ScreenCredentialDecrypt.on_btn_decrypt_clicked',
-                           f'Exported the OAUTH2.0 token JSON file: {global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN}')
+                           f'Exported the OAUTH2.0 token JSON file: {global_schema.prefs.JSON_GOOGLE_ACCOUNT_SERVICE_KEY}')
 
                 except Exception as e:
                     Lg('ScreenCredentialDecrypt.on_btn_decrypt_clicked',

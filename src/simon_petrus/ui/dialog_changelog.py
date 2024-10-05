@@ -39,7 +39,7 @@ class Ui_Dialog(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 615, 1293))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 615, 1349))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -66,8 +66,12 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Simon Petrus Changelog"))
         self.app_title.setText(_translate("Dialog", "CHANGELOG"))
-        self.app_title_2.setText(_translate("Dialog", "Simon Petrus v0.3.3 build 16 - Release of September 2024"))
+        self.app_title_2.setText(_translate("Dialog", "Simon Petrus v0.3.4 build 17 - Release of October 2024"))
         self.app_caption.setText(_translate("Dialog", "# Simon Petrus Changelog\n"
+"\n"
+"## v0.3.4 (17) --- 2024-10-05\n"
+"\n"
+"- Fix: Fixed repeated Google OAUTH token file expiration by implementing Service Account\n"
 "\n"
 "## v0.3.3 (16) --- 2024-09-13\n"
 "\n"
