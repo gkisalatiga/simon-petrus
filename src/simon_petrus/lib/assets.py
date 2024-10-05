@@ -213,7 +213,7 @@ class AppAssets(object):
         """
         try:
             # Parsing the token as the API credential.
-            token_json_location = global_schema.prefs.JSON_GOOGLE_OAUTH_TOKEN
+            token_json_location = global_schema.prefs.JSON_GOOGLE_ACCOUNT_SERVICE_KEY
             creds = Credentials.from_authorized_user_file(token_json_location, self.GOOGLE_DRIVE_SCOPES)
 
             # If the credential has expired, refresh it.

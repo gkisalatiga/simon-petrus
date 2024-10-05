@@ -1,5 +1,9 @@
 # Simon Petrus Changelog
 
+## v0.3.4 (17) --- 2024-10-05
+
+- Fix: Fixed repeated Google OAUTH token file expiration by implementing Service Account
+
 ## v0.3.3 (16) --- 2024-09-13
 
 - Fix: Fixed "cannot decode UTF-8 unicode" error when pushing the JSON schema to GitHub
